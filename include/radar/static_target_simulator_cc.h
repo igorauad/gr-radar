@@ -111,7 +111,7 @@ public:
      * \param self_coupling_db Self coupling attenuation (dB)
      * \param rndm_phaseshift Toggle random phaseshift on targets
      * \param self_coupling Toggle self coupling
-     * \param packet_len Packet length key for tagged stream
+     * \param len_key Packet length key for tagged stream
      */
     static sptr make(std::vector<float> range,
                      std::vector<float> velocity,
