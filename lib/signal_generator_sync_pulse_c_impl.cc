@@ -51,11 +51,11 @@ signal_generator_sync_pulse_c_impl::signal_generator_sync_pulse_c_impl(
     : gr::sync_block("signal_generator_sync_pulse_c",
                      gr::io_signature::make(0, 0, 0),
                      gr::io_signature::make(1, 1, sizeof(gr_complex))),
-    d_packet_len(packet_len),
-    d_counter(packet_len),
-    d_key(pmt::string_to_symbol(len_key)), // set tag identifier for tagged stream
-    d_value(pmt::from_long(packet_len)),   // set length of 1 cw packet as tagged stream
-    d_srcid(pmt::string_to_symbol("sig_gen_sync")) // set block identifier
+      d_packet_len(packet_len),
+      d_counter(packet_len),
+      d_key(pmt::string_to_symbol(len_key)), // set tag identifier for tagged stream
+      d_value(pmt::from_long(packet_len)),   // set length of 1 cw packet as tagged stream
+      d_srcid(pmt::string_to_symbol("sig_gen_sync")) // set block identifier
 {
     // Setup output buffer
     // Use alternating pulse_pause (zeros) and pulse_len (amplitude), fill with zeros at

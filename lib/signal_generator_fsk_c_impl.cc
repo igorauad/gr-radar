@@ -109,11 +109,14 @@ int signal_generator_fsk_c_impl::work(int noutput_items,
         else
             out[i] = d_amplitude * exp(d_phase_low); // start with low_freq (state=0)
 
-        d_phase_low = gr_complex(0, std::fmod(imag(d_phase_low) + 2 * GR_M_PI * d_freq_low / (float)d_samp_rate,
-                           2 * GR_M_PI));
-        d_phase_high = gr_complex(0, std::fmod(imag(d_phase_high) +
-                                          2 * GR_M_PI * d_freq_high / (float)d_samp_rate,
-                                      2 * GR_M_PI));
+        d_phase_low = gr_complex(
+            0,
+            std::fmod(imag(d_phase_low) + 2 * GR_M_PI * d_freq_low / (float)d_samp_rate,
+                      2 * GR_M_PI));
+        d_phase_high = gr_complex(
+            0,
+            std::fmod(imag(d_phase_high) + 2 * GR_M_PI * d_freq_high / (float)d_samp_rate,
+                      2 * GR_M_PI));
     }
 
     // Tell runtime system how many output items we produced.
