@@ -50,36 +50,32 @@ signal_generator_sync_pulse_c_impl::signal_generator_sync_pulse_c_impl(
     const std::string len_key)
     : gr::sync_block("signal_generator_sync_pulse_c",
                      gr::io_signature::make(0, 0, 0),
-                     gr::io_signature::make(1, 1, sizeof(gr_complex)))
+                     gr::io_signature::make(1, 1, sizeof(gr_complex))),
+    d_packet_len(packet_len),
+    d_counter(packet_len),
+    d_key(pmt::string_to_symbol(len_key)), // set tag identifier for tagged stream
+    d_value(pmt::from_long(packet_len)),   // set length of 1 cw packet as tagged stream
+    d_srcid(pmt::string_to_symbol("sig_gen_sync")) // set block identifier
 {
-    d_packet_len = packet_len;
-
-    d_key = pmt::string_to_symbol(len_key); // set tag identifier for tagged stream
-    d_value = pmt::from_long(packet_len);   // set length of 1 cw packet as tagged stream
-    d_srcid = pmt::string_to_symbol("sig_gen_sync"); // set block identifier
-
-    // Set counter to zero
-    d_counter = 0;
-
     // Setup output buffer
     // Use alternating pulse_pause (zeros) and pulse_len (amplitude), fill with zeros at
     // the end up to packet_len
     d_out_buffer.resize(packet_len);
-    int pulse_send = 0;
-    int pulse_wait = 0;
+    int i_len = 0;
+    int i_pause = 0;
     int k = 0;
-    while (pulse_wait < pulse_pause.size() || pulse_send < pulse_len.size()) {
-        if (pulse_wait < pulse_pause.size()) { // Setup wait samples
-            for (int p = 0; p < pulse_pause[pulse_wait]; p++)
+    while (i_pause < pulse_pause.size() || i_len < pulse_len.size()) {
+        if (i_pause < pulse_pause.size()) { // Setup wait samples
+            for (int p = 0; p < pulse_pause[i_pause]; p++)
                 d_out_buffer[k + p] = gr_complex(0, 0);
-            k += pulse_pause[pulse_wait];
-            pulse_wait++;
+            k += pulse_pause[i_pause];
+            i_pause++;
         }
-        if (pulse_send < pulse_len.size()) { // Setup pulse samples
-            for (int p = 0; p < pulse_len[pulse_send]; p++)
+        if (i_len < pulse_len.size()) { // Setup pulse samples
+            for (int p = 0; p < pulse_len[i_len]; p++)
                 d_out_buffer[k + p] = gr_complex(pulse_amplitude, 0);
-            k += pulse_len[pulse_send];
-            pulse_send++;
+            k += pulse_len[i_len];
+            i_len++;
         }
     }
     if (k < packet_len) { // fill with zeros
@@ -100,23 +96,16 @@ int signal_generator_sync_pulse_c_impl::work(int noutput_items,
 {
     gr_complex* out = (gr_complex*)output_items[0];
 
-    // Set output to zero
-    std::memset(out, 0, noutput_items * sizeof(gr_complex));
-
     // Push output buffer to out
     for (int i = 0; i < noutput_items; i++) {
-        // Set tag on every packet_len-th item
-        if ((nitems_written(0) + i) % d_packet_len == 0)
+        if (d_counter == d_packet_len) {
             add_item_tag(0, nitems_written(0) + i, d_key, d_value, d_srcid);
+            d_counter = 0;
+        }
 
         // Write sample
-        if (d_counter < d_packet_len) {
-            out[i] = d_out_buffer[d_counter];
-            d_counter++;
-        } else {
-            out[i] = d_out_buffer[0];
-            d_counter = 1;
-        }
+        out[i] = d_out_buffer[d_counter];
+        d_counter++;
     }
 
     // Tell runtime system how many output items we produced.
