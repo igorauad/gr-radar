@@ -30,10 +30,10 @@ namespace radar {
 
 /*!
  * \brief This block can be used to estimate the shift of a signal on input 1 in relation
- * to an other on input 2. For example the constant number of delay samples due to
- * hardware effect from a signal source can be estimated. The calculation of the shift is
- * done by a cross correlation of the input signals. The number of correlations in samples
- * is given with num_xcorr. The output message is the number of delay samples with the
+ * to another on input 2. For example the constant number of delay samples due to hardware
+ * latency from a signal source can be estimated. The calculation of the shift is done by
+ * a cross correlation of the input signals. The number of correlations in samples is
+ * given with num_xcorr. The output message is the number of delay samples with the
  * identifier (symbol) 'sync_pulse'. This can be displayed with the 'Print Results' block.
  *
  * \param num_xcorr Number of cross correlations

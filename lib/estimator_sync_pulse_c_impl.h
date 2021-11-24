@@ -22,6 +22,7 @@
 #define INCLUDED_RADAR_ESTIMATOR_SYNC_PULSE_C_IMPL_H
 
 #include <radar/estimator_sync_pulse_c.h>
+#include <volk/volk_alloc.hh>
 
 namespace gr {
 namespace radar {
@@ -42,7 +43,7 @@ public:
     int d_num_xcorr;
     pmt::pmt_t d_port_id;
     int d_noutput_items_vec;
-    std::vector<float> d_in_tx_real, d_in_rx_real;
+    volk::vector<float> d_in_tx_real, d_in_rx_real;
 
     // Where all the action really happens
     int work(int noutput_items,

@@ -24,7 +24,6 @@
 
 #include "estimator_sync_pulse_c_impl.h"
 #include <gnuradio/io_signature.h>
-#include <volk/volk.h>
 
 namespace gr {
 namespace radar {
@@ -44,11 +43,10 @@ estimator_sync_pulse_c_impl::estimator_sync_pulse_c_impl(int num_xcorr,
     : gr::tagged_stream_block("estimator_sync_pulse_c",
                               gr::io_signature::make(2, 2, sizeof(gr_complex)),
                               gr::io_signature::make(0, 0, 0),
-                              len_key)
+                              len_key),
+      d_num_xcorr(num_xcorr),
+      d_noutput_items_vec(-1)
 {
-    d_num_xcorr = num_xcorr;
-    d_noutput_items_vec = -1;
-
     // Register message port
     d_port_id = pmt::mp("Msg out");
     message_port_register_out(d_port_id);
@@ -78,16 +76,14 @@ int estimator_sync_pulse_c_impl::work(int noutput_items,
 
     // Resize buffers
     int ninput_items_min = std::min(ninput_items[0], ninput_items[1]);
-    if (d_noutput_items_vec != ninput_items_min) {
+    if (d_noutput_items_vec < ninput_items_min) {
         d_in_tx_real.resize(ninput_items_min);
         d_in_rx_real.resize(ninput_items_min);
     }
 
-    // Copy complex to float and get abs
-    for (int k = 0; k < ninput_items_min; k++) {
-        d_in_tx_real[k] = std::abs(in_tx[k]);
-        d_in_rx_real[k] = std::abs(in_rx[k]);
-    }
+    // Cross-correlate the absolute of the Tx and Rx sequences
+    volk_32fc_magnitude_32f(d_in_tx_real.data(), in_tx, ninput_items_min);
+    volk_32fc_magnitude_32f(d_in_rx_real.data(), in_rx, ninput_items_min);
 
     // Do cross correlation and find max
     float xcorr, xcorr_hold;
@@ -121,8 +117,8 @@ int estimator_sync_pulse_c_impl::work(int noutput_items,
                 pmt::from_double(
                     -1))); // if no timetag is found, set to 0 and frac_sec to -1
 
-    pxcorr = pmt::list2(pmt::string_to_symbol("sync_pulse"),
-                        pmt::from_long(std::abs(num_delay)));
+    static const pmt::pmt_t delay_msg_key = pmt::string_to_symbol("sync_pulse");
+    pxcorr = pmt::list2(delay_msg_key, pmt::from_long(std::abs(num_delay)));
     msg_out = pmt::list2(ptimestamp, pxcorr);
 
     // Publish message
