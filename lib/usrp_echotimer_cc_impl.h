@@ -38,7 +38,30 @@ namespace radar {
 class usrp_echotimer_cc_impl : public usrp_echotimer_cc
 {
 private:
-    // Nothing to declare in this block.
+    int d_samp_rate;
+    double d_samp_period;
+    float d_center_freq;
+    int d_num_delay_samps;
+    float d_timeout_tx, d_timeout_rx;      // timeout for sending/receiving
+    float d_wait_tx, d_wait_rx;            // secs to wait before sending/receiving
+    size_t d_n_ready_send, d_n_ready_recv; // samples ready to send/receive
+
+    std::vector<gr_complex> d_out_buffer;
+
+    uhd::usrp::multi_usrp::sptr d_usrp_tx, d_usrp_rx;
+    uhd::tx_streamer::sptr d_tx_stream;
+    uhd::rx_streamer::sptr d_rx_stream;
+    uhd::tx_metadata_t d_metadata_tx;
+    uhd::rx_metadata_t d_metadata_rx;
+    uhd::time_spec_t d_time_now_tx, d_time_now_rx;
+
+    gr::thread::thread d_thread_send, d_thread_recv;
+    gr_complex* d_in_send;
+    gr_complex* d_out_recv;
+    pmt::pmt_t d_time_key, d_time_val, d_srcid;
+
+    void send();
+    void receive();
 
 protected:
     int calculate_output_stream_length(const gr_vector_int& ninput_items);
@@ -68,50 +91,17 @@ public:
                            const std::string& len_key,
                            int gpio_tx_pin,
                            int gpio_rx_pin);
+
     ~usrp_echotimer_cc_impl();
-    void send();
-    void receive();
-    void set_num_delay_samps(int num_samps);
-    void set_rx_gain(float gain);
-    void set_tx_gain(float gain);
 
-    int d_samp_rate;
-    float d_center_freq;
-    int d_num_delay_samps;
-    std::vector<gr_complex> d_out_buffer;
-
-    std::string d_args_tx, d_args_rx;
-    std::string d_clock_source_tx, d_clock_source_rx;
-    std::string d_wire_tx, d_wire_rx;
-    std::string d_antenna_tx, d_antenna_rx;
-    std::string d_time_source_tx, d_time_source_rx;
-    uhd::usrp::multi_usrp::sptr d_usrp_tx, d_usrp_rx;
-    uhd::tune_request_t d_tune_request_tx, d_tune_request_rx;
-    uhd::tx_streamer::sptr d_tx_stream;
-    uhd::rx_streamer::sptr d_rx_stream;
-    uhd::tx_metadata_t d_metadata_tx;
-    uhd::rx_metadata_t d_metadata_rx;
-    double d_lo_offset_tx, d_lo_offset_rx;
-    float d_timeout_tx, d_timeout_rx;
-    float d_wait_tx, d_wait_rx;
-    float d_gain_tx, d_gain_rx;
-
-    uhd::time_spec_t d_time_now_tx, d_time_now_rx;
-
-    gr::thread::thread d_thread_recv;
-    gr_complex* d_out_recv;
-    int d_noutput_items_recv;
-    pmt::pmt_t d_time_key, d_time_val, d_srcid;
-
-    gr::thread::thread d_thread_send;
-    gr_complex* d_in_send;
-    int d_noutput_items_send;
-
-    // Where all the action really happens
     int work(int noutput_items,
              gr_vector_int& ninput_items,
              gr_vector_const_void_star& input_items,
              gr_vector_void_star& output_items);
+
+    void set_num_delay_samps(int num_samps);
+    void set_rx_gain(float gain);
+    void set_tx_gain(float gain);
 };
 
 } // namespace radar
