@@ -22,9 +22,15 @@
 #define INCLUDED_RADAR_USRP_ECHOTIMER_CC_IMPL_H
 
 #include <radar/usrp_echotimer_cc.h>
-
 #include <uhd/usrp/multi_usrp.hpp>
+#include <uhd/version.hpp>
+// clang-format off
+#if UHD_VERSION >= 3110000
+#include <uhd/utils/thread.hpp>
+#else
 #include <uhd/utils/thread_priority.hpp>
+#endif
+// clang-format on
 
 namespace gr {
 namespace radar {
