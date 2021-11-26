@@ -45,6 +45,7 @@ private:
     float d_timeout_tx, d_timeout_rx;      // timeout for sending/receiving
     float d_wait_tx, d_wait_rx;            // secs to wait before sending/receiving
     size_t d_n_ready_send, d_n_ready_recv; // samples ready to send/receive
+    bool d_stop_send, d_stop_recv;         // stop sending/receiving
 
     std::vector<gr_complex> d_out_buffer;
 
@@ -56,12 +57,16 @@ private:
     uhd::time_spec_t d_time_now_tx, d_time_now_rx;
 
     gr::thread::thread d_thread_send, d_thread_recv;
+    gr::thread::mutex d_mutex_send, d_mutex_recv;
+    gr::thread::condition_variable d_cv_send, d_cv_recv;
     gr_complex* d_in_send;
     gr_complex* d_out_recv;
     pmt::pmt_t d_time_key, d_time_val, d_srcid;
 
     void send();
     void receive();
+    void send_loop();
+    void receive_loop();
 
 protected:
     int calculate_output_stream_length(const gr_vector_int& ninput_items);

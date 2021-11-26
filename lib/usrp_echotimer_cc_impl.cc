@@ -172,10 +172,11 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
       d_wait_tx(wait_tx),
       d_wait_rx(wait_rx),
       d_n_ready_send(0),
-      d_n_ready_recv(0)
+      d_n_ready_recv(0),
+      d_stop_send(false),
+      d_stop_recv(false)
 {
     //***** Setup USRP TX *****//
-
 
     // Setup USRP TX: args (addr,...)
     d_usrp_tx = uhd::usrp::multi_usrp::make(args_tx);
@@ -256,12 +257,31 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
 
     // Sleep to get sync done
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000)); // FIXME: necessary?
+
+    // Kick off the send/receive threads
+    d_thread_send =
+        gr::thread::thread(boost::bind(&usrp_echotimer_cc_impl::send_loop, this));
+    d_thread_recv =
+        gr::thread::thread(boost::bind(&usrp_echotimer_cc_impl::receive_loop, this));
 }
 
 /*
  * Our virtual destructor.
  */
-usrp_echotimer_cc_impl::~usrp_echotimer_cc_impl() {}
+usrp_echotimer_cc_impl::~usrp_echotimer_cc_impl()
+{
+    {
+        gr::thread::scoped_lock lock(d_mutex_send);
+        d_stop_send = true;
+    }
+    d_thread_send.join();
+
+    {
+        gr::thread::scoped_lock lock(d_mutex_recv);
+        d_stop_recv = true;
+    }
+    d_thread_recv.join();
+}
 
 int usrp_echotimer_cc_impl::calculate_output_stream_length(
     const gr_vector_int& ninput_items)
@@ -303,6 +323,8 @@ void usrp_echotimer_cc_impl::send()
     d_metadata_tx.end_of_burst = true;
     d_metadata_tx.has_time_spec = false;
     d_tx_stream->send("", 0, d_metadata_tx);
+
+    d_n_ready_send = 0; // flag as done
 }
 
 void usrp_echotimer_cc_impl::receive()
@@ -332,6 +354,30 @@ void usrp_echotimer_cc_impl::receive()
 
     if (num_rx_samps < d_n_ready_recv)
         std::cerr << "Receive timeout before all samples received..." << std::endl;
+
+    d_n_ready_recv = 0; // flag as done
+}
+
+void usrp_echotimer_cc_impl::send_loop()
+{
+    while (true) {
+        gr::thread::scoped_lock lock(d_mutex_send);
+        d_cv_send.wait(lock, [this]() { return d_n_ready_send > 0 || d_stop_send; });
+        if (d_stop_send)
+            break;
+        send();
+    }
+}
+
+void usrp_echotimer_cc_impl::receive_loop()
+{
+    while (true) {
+        gr::thread::scoped_lock lock(d_mutex_recv);
+        d_cv_recv.wait(lock, [this]() { return d_n_ready_recv > 0 || d_stop_recv; });
+        if (d_stop_recv)
+            break;
+        receive();
+    }
 }
 
 int usrp_echotimer_cc_impl::work(int noutput_items,
@@ -354,19 +400,32 @@ int usrp_echotimer_cc_impl::work(int noutput_items,
     d_time_now_rx = d_time_now_tx;
 
     // Send thread
-    d_in_send = in;
-    d_n_ready_send = noutput_items;
-    d_thread_send = gr::thread::thread(boost::bind(&usrp_echotimer_cc_impl::send, this));
+    {
+        gr::thread::scoped_lock lock(d_mutex_send);
+        d_in_send = in;
+        d_n_ready_send = noutput_items;
+    }
+    d_cv_send.notify_one();
 
     // Receive thread
-    d_out_recv = &d_out_buffer[0];
-    d_n_ready_recv = noutput_items;
-    d_thread_recv =
-        gr::thread::thread(boost::bind(&usrp_echotimer_cc_impl::receive, this));
+    {
+        gr::thread::scoped_lock lock(d_mutex_recv);
+        d_out_recv = &d_out_buffer[0];
+        d_n_ready_recv = noutput_items;
+    }
+    d_cv_recv.notify_one();
 
-    // Wait for threads to complete
-    d_thread_send.join();
-    d_thread_recv.join();
+    // Wait for the thread iterations to complete
+    while (true) {
+        gr::thread::scoped_lock lock(d_mutex_send);
+        if (d_n_ready_send == 0)
+            break;
+    }
+    while (true) {
+        gr::thread::scoped_lock lock(d_mutex_recv);
+        if (d_n_ready_recv == 0)
+            break;
+    }
 
     // Shift of number delay samples (fill with zeros)
     memcpy(out,
