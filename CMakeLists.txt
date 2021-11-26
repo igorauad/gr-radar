@@ -134,7 +134,7 @@ endif(APPLE)
 # Find gnuradio build dependencies
 ########################################################################
 find_package(Doxygen)
-find_package(UHD)
+find_package(UHD "4.0.0" REQUIRED)
 find_package(FFTW3f)
 
 ########################################################################

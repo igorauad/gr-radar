@@ -66,7 +66,9 @@ public:
                      float timeout_rx,
                      float wait_rx,
                      float lo_offset_rx,
-                     const std::string& len_key = "packet_len");
+                     const std::string& len_key = "packet_len",
+                     int gpio_tx_pin = -1,
+                     int gpio_rx_pin = -1);
 
     virtual void set_num_delay_samps(int num_samps) = 0;
     virtual void set_rx_gain(float gain) = 0;

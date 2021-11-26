@@ -106,6 +106,14 @@ parameters:
     dtype: string
     default: '"packet_len"'
     hide: part
+-   id: gpio_tx_pin
+    label: Tx-high GPIO Pin
+    dtype: int
+    default: '-1'
+-   id: gpio_rx_pin
+    label: Rx-high GPIO Pin
+    dtype: int
+    default: '-1'
 
 inputs:
 -   label: IQ in
@@ -123,7 +131,7 @@ templates:
         ${args_tx}, ${wire_tx}, ${clock_source_tx}, ${time_source_tx}, ${antenna_tx},
         ${gain_tx}, ${timeout_tx}, ${wait_tx}, ${lo_offset_tx}, ${args_rx}, ${wire_rx},
         ${clock_source_rx}, ${time_source_rx}, ${antenna_rx}, ${gain_rx}, ${timeout_rx},
-        ${wait_rx}, ${lo_offset_rx}, ${len_key})
+        ${wait_rx}, ${lo_offset_rx}, ${len_key}, ${gpio_tx_pin}, ${gpio_rx_pin})
     callbacks:
     - set_num_delay_samps(${num_delay_samps})
     - set_tx_gain(${gain_tx})

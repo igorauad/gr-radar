@@ -59,7 +59,9 @@ public:
                            float timeout_rx,
                            float wait_rx,
                            float lo_offset_rx,
-                           const std::string& len_key);
+                           const std::string& len_key,
+                           int gpio_tx_pin,
+                           int gpio_rx_pin);
     ~usrp_echotimer_cc_impl();
     void send();
     void receive();
