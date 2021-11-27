@@ -30,6 +30,52 @@
 namespace gr {
 namespace radar {
 
+void echotimer_worker::loop()
+{
+    while (true) {
+        gr::thread::scoped_lock lock(d_mutex);
+        d_cv.wait(lock, [this]() { return d_pending_samples > 0 || d_stop; });
+        if (d_stop)
+            break;
+        d_callback(d_buffer, d_pending_samples);
+        d_pending_samples = 0;
+    }
+}
+
+void echotimer_worker::provide(gr_complex* buf, size_t n_samples)
+{
+    {
+        gr::thread::scoped_lock lock(d_mutex);
+        d_buffer = buf;
+        d_pending_samples = n_samples;
+    }
+    d_cv.notify_one();
+}
+
+void echotimer_worker::wait()
+{
+    while (true) {
+        gr::thread::scoped_lock lock(d_mutex);
+        if (d_pending_samples == 0)
+            break;
+    }
+}
+
+void echotimer_worker::start()
+{
+    d_thread = gr::thread::thread(boost::bind(&echotimer_worker::loop, this));
+}
+
+void echotimer_worker::stop()
+{
+    {
+        gr::thread::scoped_lock lock(d_mutex);
+        d_stop = true;
+    }
+    d_cv.notify_all();
+    d_thread.join();
+}
+
 usrp_echotimer_cc::sptr usrp_echotimer_cc::make(int samp_rate,
                                                 float center_freq,
                                                 int num_delay_samps,
@@ -174,7 +220,9 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
       d_n_ready_send(0),
       d_n_ready_recv(0),
       d_stop_send(false),
-      d_stop_recv(false)
+      d_stop_recv(false),
+      d_worker_send(boost::bind(&usrp_echotimer_cc_impl::send, this, _1, _2)),
+      d_worker_recv(boost::bind(&usrp_echotimer_cc_impl::receive, this, _1, _2))
 {
     //***** Setup USRP TX *****//
 
@@ -258,11 +306,9 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
     // Sleep to get sync done
     boost::this_thread::sleep(boost::posix_time::milliseconds(1000)); // FIXME: necessary?
 
-    // Kick off the send/receive threads
-    d_thread_send =
-        gr::thread::thread(boost::bind(&usrp_echotimer_cc_impl::send_loop, this));
-    d_thread_recv =
-        gr::thread::thread(boost::bind(&usrp_echotimer_cc_impl::receive_loop, this));
+    // Kick off the send/receive workers
+    d_worker_send.start();
+    d_worker_recv.start();
 }
 
 /*
@@ -270,17 +316,8 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
  */
 usrp_echotimer_cc_impl::~usrp_echotimer_cc_impl()
 {
-    {
-        gr::thread::scoped_lock lock(d_mutex_send);
-        d_stop_send = true;
-    }
-    d_thread_send.join();
-
-    {
-        gr::thread::scoped_lock lock(d_mutex_recv);
-        d_stop_recv = true;
-    }
-    d_thread_recv.join();
+    d_worker_send.stop();
+    d_worker_recv.stop();
 }
 
 int usrp_echotimer_cc_impl::calculate_output_stream_length(
@@ -299,7 +336,7 @@ void usrp_echotimer_cc_impl::set_rx_gain(float gain) { d_usrp_rx->set_rx_gain(ga
 
 void usrp_echotimer_cc_impl::set_tx_gain(float gain) { d_usrp_tx->set_tx_gain(gain); }
 
-void usrp_echotimer_cc_impl::send()
+void usrp_echotimer_cc_impl::send(gr_complex* send_buf, size_t num_samps)
 {
     // Setup metadata for first package
     d_metadata_tx.start_of_burst = true;
@@ -310,12 +347,12 @@ void usrp_echotimer_cc_impl::send()
 
     // Send input buffer
     size_t num_acc_samps = 0; // Number of accumulated samples
-    double expected_duration = d_n_ready_send * d_samp_period;
+    double expected_duration = num_samps * d_samp_period;
     // Data to USRP
     size_t num_tx_samps = d_tx_stream->send(
-        d_in_send, d_n_ready_send, d_metadata_tx, expected_duration + d_timeout_tx);
+        send_buf, num_samps, d_metadata_tx, expected_duration + d_timeout_tx);
     // Get timeout
-    if (num_tx_samps < d_n_ready_send)
+    if (num_tx_samps < num_samps)
         std::cerr << "Send timeout..." << std::endl;
 
     // send a mini EOB packet
@@ -323,23 +360,21 @@ void usrp_echotimer_cc_impl::send()
     d_metadata_tx.end_of_burst = true;
     d_metadata_tx.has_time_spec = false;
     d_tx_stream->send("", 0, d_metadata_tx);
-
-    d_n_ready_send = 0; // flag as done
 }
 
-void usrp_echotimer_cc_impl::receive()
+void usrp_echotimer_cc_impl::receive(gr_complex* recv_buf, size_t num_samps)
 {
     // Setup RX streaming
     uhd::stream_cmd_t stream_cmd(uhd::stream_cmd_t::STREAM_MODE_NUM_SAMPS_AND_DONE);
-    stream_cmd.num_samps = d_n_ready_recv;
+    stream_cmd.num_samps = num_samps;
     stream_cmd.stream_now = false;
     stream_cmd.time_spec = d_time_now_rx + uhd::time_spec_t(d_wait_rx);
     d_rx_stream->issue_stream_cmd(stream_cmd);
 
     // Receive a packet
-    double expected_duration = d_n_ready_recv * d_samp_period;
+    double expected_duration = num_samps * d_samp_period;
     size_t num_rx_samps = d_rx_stream->recv(
-        d_out_recv, d_n_ready_recv, d_metadata_rx, expected_duration + d_timeout_rx);
+        recv_buf, num_samps, d_metadata_rx, expected_duration + d_timeout_rx);
 
     // Save timestamp
     d_time_val =
@@ -352,32 +387,8 @@ void usrp_echotimer_cc_impl::receive()
             str(boost::format("Receiver error %s") % d_metadata_rx.strerror()));
     }
 
-    if (num_rx_samps < d_n_ready_recv)
+    if (num_rx_samps < num_samps)
         std::cerr << "Receive timeout before all samples received..." << std::endl;
-
-    d_n_ready_recv = 0; // flag as done
-}
-
-void usrp_echotimer_cc_impl::send_loop()
-{
-    while (true) {
-        gr::thread::scoped_lock lock(d_mutex_send);
-        d_cv_send.wait(lock, [this]() { return d_n_ready_send > 0 || d_stop_send; });
-        if (d_stop_send)
-            break;
-        send();
-    }
-}
-
-void usrp_echotimer_cc_impl::receive_loop()
-{
-    while (true) {
-        gr::thread::scoped_lock lock(d_mutex_recv);
-        d_cv_recv.wait(lock, [this]() { return d_n_ready_recv > 0 || d_stop_recv; });
-        if (d_stop_recv)
-            break;
-        receive();
-    }
 }
 
 int usrp_echotimer_cc_impl::work(int noutput_items,
@@ -399,33 +410,11 @@ int usrp_echotimer_cc_impl::work(int noutput_items,
     d_time_now_tx = d_usrp_tx->get_time_now();
     d_time_now_rx = d_time_now_tx;
 
-    // Send thread
-    {
-        gr::thread::scoped_lock lock(d_mutex_send);
-        d_in_send = in;
-        d_n_ready_send = noutput_items;
-    }
-    d_cv_send.notify_one();
-
-    // Receive thread
-    {
-        gr::thread::scoped_lock lock(d_mutex_recv);
-        d_out_recv = &d_out_buffer[0];
-        d_n_ready_recv = noutput_items;
-    }
-    d_cv_recv.notify_one();
-
-    // Wait for the thread iterations to complete
-    while (true) {
-        gr::thread::scoped_lock lock(d_mutex_send);
-        if (d_n_ready_send == 0)
-            break;
-    }
-    while (true) {
-        gr::thread::scoped_lock lock(d_mutex_recv);
-        if (d_n_ready_recv == 0)
-            break;
-    }
+    // Let the send/receive threads do the work
+    d_worker_send.provide(in, noutput_items);
+    d_worker_recv.provide(&d_out_buffer[0], noutput_items);
+    d_worker_send.wait();
+    d_worker_recv.wait();
 
     // Shift of number delay samples (fill with zeros)
     memcpy(out,

@@ -35,6 +35,27 @@
 namespace gr {
 namespace radar {
 
+using worker_callback = boost::function<void(gr_complex*, size_t)>;
+class echotimer_worker
+{
+private:
+    bool d_stop = false;
+    size_t d_pending_samples = 0;
+    gr_complex* d_buffer;
+    gr::thread::thread d_thread;
+    gr::thread::mutex d_mutex;
+    gr::thread::condition_variable d_cv;
+    worker_callback d_callback;
+
+public:
+    echotimer_worker(worker_callback callback) : d_callback(callback){};
+    void loop();
+    void provide(gr_complex* buf, size_t n_samples);
+    void wait();
+    void start();
+    void stop();
+};
+
 class usrp_echotimer_cc_impl : public usrp_echotimer_cc
 {
 private:
@@ -55,18 +76,12 @@ private:
     uhd::tx_metadata_t d_metadata_tx;
     uhd::rx_metadata_t d_metadata_rx;
     uhd::time_spec_t d_time_now_tx, d_time_now_rx;
-
-    gr::thread::thread d_thread_send, d_thread_recv;
-    gr::thread::mutex d_mutex_send, d_mutex_recv;
-    gr::thread::condition_variable d_cv_send, d_cv_recv;
-    gr_complex* d_in_send;
-    gr_complex* d_out_recv;
     pmt::pmt_t d_time_key, d_time_val, d_srcid;
 
-    void send();
-    void receive();
-    void send_loop();
-    void receive_loop();
+    echotimer_worker d_worker_send, d_worker_recv;
+
+    void send(gr_complex* send_buf, size_t num_samps);
+    void receive(gr_complex* recv_buf, size_t num_samps);
 
 protected:
     int calculate_output_stream_length(const gr_vector_int& ninput_items);
