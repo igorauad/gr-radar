@@ -3,6 +3,7 @@
 id: radar_usrp_echotimer_cc
 label: USRP Echotimer
 category: '[RADAR]/RADAR'
+flags: [python, cpp, throttle]
 
 parameters:
 -   id: samp_rate
