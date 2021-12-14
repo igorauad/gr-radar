@@ -110,10 +110,12 @@ parameters:
     label: Tx-high GPIO Pin
     dtype: int
     default: '-1'
+    hide: part
 -   id: gpio_rx_pin
     label: Rx-high GPIO Pin
     dtype: int
     default: '-1'
+    hide: part
 
 inputs:
 -   label: IQ in

@@ -49,6 +49,7 @@ list(APPEND radar_sources
     split_fsk_cc_impl.cc
     estimator_fsk_impl.cc
     usrp_echotimer_cc_impl.cc
+    usrp_gpio.cc
     estimator_fmcw_impl.cc
     signal_generator_sync_pulse_c_impl.cc
     estimator_sync_pulse_c_impl.cc

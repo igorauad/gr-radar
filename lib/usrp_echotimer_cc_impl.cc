@@ -23,8 +23,8 @@
 #endif
 
 #include "usrp_echotimer_cc_impl.h"
+#include "usrp_gpio.h"
 #include <gnuradio/io_signature.h>
-#include <uhd/version.hpp>
 #include <iostream>
 
 namespace gr {
@@ -126,57 +126,6 @@ usrp_echotimer_cc::sptr usrp_echotimer_cc::make(int samp_rate,
                                                                  gpio_tx_pin,
                                                                  gpio_rx_pin));
 }
-
-#if UHD_VERSION >= 4000000
-void configure_gpio(uhd::usrp::multi_usrp::sptr usrp,
-                    int pin,
-                    bool high_on_tx,
-                    size_t bank = 0,
-                    size_t chan = 0,
-                    size_t mboard = 0)
-{
-    auto src_banks = usrp->get_gpio_src_banks();
-    if (bank >= src_banks.size()) {
-        throw std::runtime_error("Source-controlled GPIO bank " + std::to_string(bank) +
-                                 " is out of range");
-    }
-
-    auto gpio_src = usrp->get_gpio_src(src_banks[bank]);
-    if (pin < 0 || pin > 31 || pin >= gpio_src.size()) {
-        throw std::runtime_error("GPIO pin " + std::to_string(pin) + " is out of range");
-    }
-
-    // Configure pin to be controlled by UHD:
-    gpio_src[pin] = "RF" + std::to_string(chan);
-    usrp->set_gpio_src(src_banks[bank], gpio_src);
-
-    // Configure the GPIO pin
-    auto banks = usrp->get_gpio_banks(mboard);
-    if (bank >= banks.size()) {
-        throw std::runtime_error("GPIO bank " + std::to_string(bank) +
-                                 " is out of range");
-    }
-
-    // Set it in automatic transmit-receive mode:
-    uint32_t mask = 1 << pin;
-    usrp->set_gpio_attr(banks[bank], "CTRL", mask, mask);
-    // Configure it as an output pin
-    usrp->set_gpio_attr(banks[bank], "DDR", mask, mask);
-    // Set it high in either transmit-only or receive-only states.
-    // Off in idle or full-duplex state.
-    usrp->set_gpio_attr(banks[bank], "ATR_0X", 0x0, mask);
-    usrp->set_gpio_attr(banks[bank], "ATR_XX", 0x0, mask);
-    if (high_on_tx) {
-        usrp->set_gpio_attr(banks[bank], "ATR_TX", mask, mask);
-        usrp->set_gpio_attr(banks[bank], "ATR_RX", 0x0, mask);
-    } else {
-        usrp->set_gpio_attr(banks[bank], "ATR_TX", 0x0, mask);
-        usrp->set_gpio_attr(banks[bank], "ATR_RX", mask, mask);
-    }
-}
-#else
-#warning "Compiling echotimer without GPIO support"
-#endif
 
 /*
  * The private constructor
@@ -289,11 +238,15 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
     if (gpio_tx_pin != -1 || gpio_rx_pin != -1)
         throw std::runtime_error("Block compiled without GPIO support");
 #else
-    if (gpio_tx_pin != -1)
-        configure_gpio(d_usrp_tx, gpio_tx_pin, true /* Tx */);
+    if (gpio_tx_pin != -1) {
+        usrp_configure_gpio(d_usrp_tx, gpio_tx_pin, true /* Tx */);
+        usrp_dump_gpio_config(d_usrp_tx);
+    }
 
-    if (gpio_rx_pin != -1)
-        configure_gpio(d_usrp_rx, gpio_rx_pin, false /* Rx */);
+    if (gpio_rx_pin != -1) {
+        usrp_configure_gpio(d_usrp_rx, gpio_rx_pin, false /* Rx */);
+        usrp_dump_gpio_config(d_usrp_rx);
+    }
 #endif
 
     // Setup rx_time pmt
