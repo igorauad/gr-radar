@@ -23,8 +23,8 @@
 #endif
 
 #include "usrp_echotimer_cc_impl.h"
-#include "usrp_gpio.h"
 #include <gnuradio/io_signature.h>
+#include <radar/usrp_gpio.h>
 #include <iostream>
 
 namespace gr {
@@ -239,13 +239,15 @@ usrp_echotimer_cc_impl::usrp_echotimer_cc_impl(int samp_rate,
         throw std::runtime_error("Block compiled without GPIO support");
 #else
     if (gpio_tx_pin != -1) {
-        usrp_configure_gpio(d_usrp_tx, gpio_tx_pin, true /* Tx */);
-        usrp_dump_gpio_config(d_usrp_tx);
+        usrp_gpio_configure_atr_output(
+            d_usrp_tx, gpio_tx_pin, false, true /* Tx only */, false, false);
+        usrp_gpio_dump_config(d_usrp_tx);
     }
 
     if (gpio_rx_pin != -1) {
-        usrp_configure_gpio(d_usrp_rx, gpio_rx_pin, false /* Rx */);
-        usrp_dump_gpio_config(d_usrp_rx);
+        usrp_gpio_configure_atr_output(
+            d_usrp_rx, gpio_rx_pin, false, false, true /* Rx only */, false);
+        usrp_gpio_dump_config(d_usrp_rx);
     }
 #endif
 
