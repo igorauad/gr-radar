@@ -169,6 +169,7 @@ add_subdirectory(docs)
 add_subdirectory(swig)
 add_subdirectory(python)
 add_subdirectory(grc)
+add_subdirectory(examples/usrp)
 
 ########################################################################
 # Install cmake search helper for this library
