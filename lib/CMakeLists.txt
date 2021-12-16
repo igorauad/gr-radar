@@ -68,6 +68,7 @@ list(APPEND radar_sources
     estimator_ofdm_impl.cc
     estimator_rcs_impl.cc
     trigger_command_impl.cc
+    usrp_burst_source_c_impl.cc
     )
 
 set(radar_sources "${radar_sources}" PARENT_SCOPE)

@@ -1,0 +1,72 @@
+id: radar_usrp_burst_source_c
+label: USRP Burst Source
+category: '[RADAR]/RADAR'
+flags: [python, cpp, throttle]
+
+templates:
+  imports: import radar
+  make: radar.usrp_burst_source_c(${samp_rate}, ${center_freq}, ${duty_cycle},
+      ${period}, ${gain}, ${args}, ${wire}, ${clock_source}, ${time_source},
+      ${antenna}, ${gpio_pin})
+  callbacks:
+    - set_tx_gain(${gain})
+
+parameters:
+- id: samp_rate
+  label: Sample rate
+  dtype: float
+- id: center_freq
+  label: Center frequency
+  dtype: float
+- id: duty_cycle
+  label: Duty Cycle
+  dtype: float
+- id: period
+  label: Period
+  dtype: float
+- id: gain
+  label: Tx Gain
+  dtype: float
+- id: args
+  label: Arguments
+  dtype: string
+  default: '''addr=192.168.xx.xx'''
+  hide: part
+- id: wire
+  label: Wire Format
+  dtype: string
+  default: ''
+  hide: part
+- id: clock_source
+  label: Clock source
+  dtype: string
+  options: ["internal", "external", "mimo", "gpsdo"]
+  option_labels: [Internal, External, MIMO Cable, GPSDO]
+  hide: part
+- id: time_source
+  label: Time source
+  dtype: string
+  options: ["internal", "external", "mimo", "gpsdo"]
+  option_labels: [Internal, External, MIMO Cable, GPSDO]
+  hide: part
+- id: antenna
+  label: Antenna
+  dtype: string
+  options: ['"TX/RX"']
+  option_labels: [TX/RX]
+  hide: part
+- id: gpio_pin
+  label: Tx-high GPIO Pin
+  dtype: int
+  default: '-1'
+  hide: part
+
+asserts:
+- ${ duty_cycle >= 0.0 and duty_cycle <= 1.0 }
+
+inputs:
+- label: IQ in
+  domain: stream
+  dtype: complex
+
+file_format: 1
