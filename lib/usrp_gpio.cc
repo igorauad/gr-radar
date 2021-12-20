@@ -103,6 +103,26 @@ std::string usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::sptr usrp,
     return bank_name;
 }
 
+std::string usrp_gpio_configure_input(uhd::usrp::multi_usrp::sptr usrp,
+                                      const std::vector<int>& pins,
+                                      size_t bank,
+                                      size_t chan,
+                                      size_t mboard)
+{
+    std::string bank_name = get_and_configure_gpio_bank(usrp, pins, bank, chan, mboard);
+
+    uint32_t mask = 0;
+    for (size_t i = 0; i < pins.size(); i++) {
+        mask |= 1 << pins[i];
+    }
+
+    // Set pin(s) to manual mode and input direction:
+    usrp->set_gpio_attr(bank_name, "CTRL", 0x0, mask);
+    usrp->set_gpio_attr(bank_name, "DDR", 0x0, mask);
+
+    return bank_name;
+}
+
 void usrp_gpio_dump_config(uhd::usrp::multi_usrp::sptr usrp,
                            size_t bank,
                            size_t chan,

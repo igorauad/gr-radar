@@ -155,23 +155,6 @@ blocks:
     coordinate: [680, 12.0]
     rotation: 0
     state: true
-- name: gpio
-  id: parameter
-  parameters:
-    alias: ''
-    comment: ''
-    hide: none
-    label: Tx-High GPIO Pin
-    short_id: ''
-    type: intx
-    value: '-1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [336, 124.0]
-    rotation: 0
-    state: true
 - name: gpio_guard
   id: parameter
   parameters:
@@ -186,7 +169,41 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [480, 124.0]
+    coordinate: [656, 124.0]
+    rotation: 0
+    state: true
+- name: in_gpio
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: Input GPIO pin to poll before/after Tx
+    short_id: ''
+    type: intx
+    value: '-1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [328, 124.0]
+    rotation: 0
+    state: true
+- name: out_gpio
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: Output GPIO pin to assert on Tx
+    short_id: ''
+    type: intx
+    value: '-1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [488, 124.0]
     rotation: 0
     state: true
 - name: period
@@ -316,7 +333,8 @@ blocks:
     duty_cycle: duty_cycle
     gain: gui_gain
     gpio_guard_period: gpio_guard
-    gpio_pin: gpio
+    in_gpio_pin: in_gpio
+    out_gpio_pin: out_gpio
     period: period
     samp_rate: samp_rate
     time_source: internal

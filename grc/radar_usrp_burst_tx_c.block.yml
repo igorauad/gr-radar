@@ -7,7 +7,7 @@ templates:
   imports: import radar
   make: radar.usrp_burst_tx_c(${samp_rate}, ${center_freq}, ${duty_cycle},
       ${period}, ${gain}, ${args}, ${wire}, ${clock_source}, ${time_source},
-      ${antenna}, ${gpio_pin}, ${gpio_guard_period})
+      ${antenna}, ${in_gpio_pin}, ${out_gpio_pin}, ${gpio_guard_period})
   callbacks:
     - set_tx_gain(${gain})
 
@@ -55,8 +55,13 @@ parameters:
   options: ['"TX/RX"']
   option_labels: [TX/RX]
   hide: part
-- id: gpio_pin
-  label: Tx-high GPIO Pin
+- id: in_gpio_pin
+  label: In GPIO Pin
+  dtype: int
+  default: '-1'
+  hide: part
+- id: out_gpio_pin
+  label: Out GPIO Pin
   dtype: int
   default: '-1'
   hide: part

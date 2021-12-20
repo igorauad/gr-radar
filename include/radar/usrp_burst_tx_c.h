@@ -55,7 +55,9 @@ public:
      * @param clock_source USRP clock source.
      * @param time_source USRP time source.
      * @param antenna USRP Tx antenna.
-     * @param gpio_pin GPIO pin to assert when transmitting.
+     * @param in_gpio_pin Input GPIO pin to poll before and after each burst transmission.
+     * Should be high for Tx to start and low after Tx ends.
+     * @param out_gpio_pin Output GPIO pin to assert when transmitting.
      * @param gpio_guard_period GPIO assertion guard period in seconds. The GPIO will be
      * asserted this many seconds in advance of the actual transmission start and
      * deasserted with this many seconds delay after the burst transmission ends.
@@ -71,7 +73,8 @@ public:
                      std::string clock_source,
                      std::string time_source,
                      std::string antenna,
-                     int gpio_pin = -1,
+                     int in_gpio_pin = -1,
+                     int out_gpio_pin = -1,
                      float gpio_guard_period = 0.0);
 
     virtual void set_tx_gain(float gain) = 0;

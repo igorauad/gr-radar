@@ -27,6 +27,7 @@
 #include <radar/usrp_gpio.h>
 #include <uhd/version.hpp>
 #include <algorithm>
+#include <chrono>
 #include <thread>
 
 namespace gr {
@@ -42,7 +43,8 @@ usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
                                             std::string clock_source,
                                             std::string time_source,
                                             std::string antenna,
-                                            int gpio_pin,
+                                            int in_gpio_pin,
+                                            int out_gpio_pin,
                                             float gpio_guard_period)
 {
     return gnuradio::get_initial_sptr(new usrp_burst_tx_c_impl(samp_rate,
@@ -55,7 +57,8 @@ usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
                                                                clock_source,
                                                                time_source,
                                                                antenna,
-                                                               gpio_pin,
+                                                               in_gpio_pin,
+                                                               out_gpio_pin,
                                                                gpio_guard_period));
 }
 
@@ -73,7 +76,8 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
                                            std::string clock_source,
                                            std::string time_source,
                                            std::string antenna,
-                                           int gpio_pin,
+                                           int in_gpio_pin,
+                                           int out_gpio_pin,
                                            float gpio_guard_period)
     : gr::sync_block("usrp_burst_tx_c",
                      gr::io_signature::make(1, 1, sizeof(gr_complex)),
@@ -84,8 +88,9 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
       d_burst_len(d_burst_duration * samp_rate),
       d_n_sent(0),
       d_n_burst(0),
-      d_gpio_pin(gpio_pin),
-      d_gpio_manual(gpio_pin != -1 && gpio_guard_period > 0.0),
+      d_in_gpio_pin(in_gpio_pin),
+      d_out_gpio_pin(out_gpio_pin),
+      d_gpio_manual(out_gpio_pin != -1 && gpio_guard_period > 0.0),
       d_gpio_manual_assertion_pending(d_gpio_manual), // start pending in manual mode
       d_gpio_guard_period(gpio_guard_period)
 {
@@ -127,23 +132,28 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
 
 // GPIO configuration
 #if UHD_VERSION < 4000000
-    if (gpio_pin != -1)
+    if (in_gpio_pin != -1 || out_gpio_pin != -1)
         throw std::runtime_error("Block compiled without GPIO support");
 #else
-    if (gpio_pin != -1) {
+    if (in_gpio_pin != -1)
+        d_in_gpio_bank = usrp_gpio_configure_input(d_usrp, { in_gpio_pin });
+
+    if (out_gpio_pin != -1) {
         // Configure the GPIO output value manually when the GPIO has to be
         // asserted with a time advance relative to when the Tx starts and
         // deasserted with a delay relative to when the Tx ends. Otherwise, tie
         // the output value to the radio's Tx state via the ATR mechanism.
         if (d_gpio_manual) {
-            d_gpio_bank =
-                usrp_gpio_configure_manual_output(d_usrp, { gpio_pin }, { false });
+            d_out_gpio_bank =
+                usrp_gpio_configure_manual_output(d_usrp, { out_gpio_pin }, { false });
         } else {
             usrp_gpio_configure_atr_output(
-                d_usrp, gpio_pin, false, true /* Tx only */, false, false);
+                d_usrp, out_gpio_pin, false, true /* Tx only */, false, false);
         }
-        usrp_gpio_dump_config(d_usrp);
     }
+
+    if (in_gpio_pin != -1 || out_gpio_pin != -1)
+        usrp_gpio_dump_config(d_usrp);
 #endif
 
     // Dump settings:
@@ -159,12 +169,32 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
 
 void usrp_burst_tx_c_impl::set_tx_gain(float gain) { d_usrp->set_tx_gain(gain); }
 
+void usrp_burst_tx_c_impl::wait_gpio_in(bool expected_val,
+                                        double timeout_ms,
+                                        int sleep_ms)
+{
+    double elapsed_ms = 0;
+    while (elapsed_ms < timeout_ms) {
+        uint32_t reg_val = d_usrp->get_gpio_attr(d_in_gpio_bank, "READBACK");
+        bool bit_val = (reg_val >> d_in_gpio_pin) & 0x01;
+        if (bit_val == expected_val)
+            break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+        elapsed_ms += sleep_ms;
+    }
+    if (elapsed_ms >= timeout_ms) {
+        throw std::runtime_error(
+            "Timed out while waiting for val=" + std::to_string(expected_val) +
+            " on input pin " + std::to_string(d_in_gpio_pin));
+    }
+}
+
 void usrp_burst_tx_c_impl::set_gpio_timed(const uhd::time_spec_t& time, bool val)
 {
 #if UHD_VERSION >= 4000000
-    uint32_t mask = 1 << d_gpio_pin;
+    uint32_t mask = 1 << d_out_gpio_pin;
     d_usrp->set_command_time(time);
-    d_usrp->set_gpio_attr(d_gpio_bank, "OUT", val << d_gpio_pin, mask);
+    d_usrp->set_gpio_attr(d_out_gpio_bank, "OUT", val << d_out_gpio_pin, mask);
 #endif
 }
 
@@ -191,19 +221,22 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
             const size_t samps_available = ninput_items - n_consumed;
             const size_t samps_remaining = d_burst_len - d_n_sent;
             const size_t samps_to_send = std::min(samps_remaining, samps_available);
+            const bool start_of_burst = d_n_sent == 0;
+
+            // If required, wait for a high reading on the input GPIO pin before
+            // initiating a burst
+            if (start_of_burst && d_in_gpio_pin != -1)
+                wait_gpio_in(true);
 
             // Update the Tx metadata and the timeout value
-            if (d_n_sent == 0) {
-                // Only the first packet of the burst needs a time_spec (see the
-                // tx_bursts.cpp example on the UHD repository)
-                d_tx_metadata.start_of_burst = true;
-                d_tx_metadata.has_time_spec = true;
-                d_tx_metadata.time_spec = d_next_tx;
-            } else {
-                d_tx_metadata.start_of_burst = false;
-                d_tx_metadata.has_time_spec = false;
-            }
+            //
+            // Note only the first packet of the burst needs a time_spec (see
+            // the tx_bursts.cpp example in the UHD repository).
+            d_tx_metadata.start_of_burst = start_of_burst;
             d_tx_metadata.end_of_burst = samps_to_send == samps_remaining;
+            d_tx_metadata.has_time_spec = start_of_burst;
+            if (start_of_burst)
+                d_tx_metadata.time_spec = d_next_tx;
 
             // Timeout value when waiting for the blocking send call: delay
             // before Tx starts + padding
@@ -245,6 +278,12 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
             set_gpio_timed(d_next_tx + d_burst_duration + d_gpio_guard_period, false);
             d_gpio_manual_assertion_pending = true; // prepare for the next burst
         }
+
+        // If required, wait for a low reading on the input GPIO pin before
+        // proceeding to the next burst
+        if (d_in_gpio_pin != -1)
+            wait_gpio_in(false);
+
         d_next_tx += d_burst_period;
         d_n_sent = 0;
         d_n_burst++;

@@ -47,7 +47,7 @@ RADAR_API void usrp_gpio_configure_atr_output(uhd::usrp::multi_usrp::sptr usrp,
 
 
 /**
- * @brief Configure USRP GPIO pin in manual mode.
+ * @brief Configure USRP GPIO pin(s) in manual output mode.
  *
  * Configures one or multiple GPIO pins as manually-controlled output pins
  * driven by UHD.
@@ -67,6 +67,22 @@ RADAR_API std::string usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::s
                                                         size_t bank = 0,
                                                         size_t chan = 0,
                                                         size_t mboard = 0);
+
+/**
+ * @brief Configure USRP GPIO pin(s) in input mode.
+ *
+ * @param usrp Shared pointer to a multi-USRP object.
+ * @param pins Target GPIO pins.
+ * @param bank GPIO bank index.
+ * @param chan RF channel index.
+ * @param mboard Motherboard index.
+ * @return GPIO bank name to facilitate future calls to read the input pin(s).
+ */
+RADAR_API std::string usrp_gpio_configure_input(uhd::usrp::multi_usrp::sptr usrp,
+                                                const std::vector<int>& pins,
+                                                size_t bank = 0,
+                                                size_t chan = 0,
+                                                size_t mboard = 0);
 
 /**
  * @brief Dump the current USRP GPIO configuration.
