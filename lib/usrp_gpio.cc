@@ -75,12 +75,12 @@ void usrp_gpio_configure_atr_output(uhd::usrp::multi_usrp::sptr usrp,
     usrp->set_gpio_attr(bank_name, "ATR_XX", high_full_duplex ? mask : 0x0, mask);
 }
 
-void usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::sptr usrp,
-                                       const std::vector<int>& pins,
-                                       const std::vector<bool>& vals,
-                                       size_t bank,
-                                       size_t chan,
-                                       size_t mboard)
+std::string usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::sptr usrp,
+                                              const std::vector<int>& pins,
+                                              const std::vector<bool>& vals,
+                                              size_t bank,
+                                              size_t chan,
+                                              size_t mboard)
 {
     if (pins.size() != vals.size())
         throw std::runtime_error("Pins and values vectors must have the same length");
@@ -99,6 +99,8 @@ void usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::sptr usrp,
     usrp->set_gpio_attr(bank_name, "DDR", mask, mask);
     // Define their output values
     usrp->set_gpio_attr(bank_name, "OUT", out_val, mask);
+
+    return bank_name;
 }
 
 void usrp_gpio_dump_config(uhd::usrp::multi_usrp::sptr usrp,

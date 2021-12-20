@@ -42,7 +42,8 @@ usrp_burst_source_c::sptr usrp_burst_source_c::make(float samp_rate,
                                                     std::string clock_source,
                                                     std::string time_source,
                                                     std::string antenna,
-                                                    int gpio_pin)
+                                                    int gpio_pin,
+                                                    float gpio_guard_period)
 {
     return gnuradio::get_initial_sptr(new usrp_burst_source_c_impl(samp_rate,
                                                                    center_freq,
@@ -54,7 +55,8 @@ usrp_burst_source_c::sptr usrp_burst_source_c::make(float samp_rate,
                                                                    clock_source,
                                                                    time_source,
                                                                    antenna,
-                                                                   gpio_pin));
+                                                                   gpio_pin,
+                                                                   gpio_guard_period));
 }
 
 
@@ -71,7 +73,8 @@ usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
                                                    std::string clock_source,
                                                    std::string time_source,
                                                    std::string antenna,
-                                                   int gpio_pin)
+                                                   int gpio_pin,
+                                                   float gpio_guard_period)
     : gr::sync_block("usrp_burst_source_c",
                      gr::io_signature::make(1, 1, sizeof(gr_complex)),
                      gr::io_signature::make(0, 0, 0)),
@@ -80,10 +83,21 @@ usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
       d_burst_period(period),
       d_burst_len(d_burst_duration * samp_rate),
       d_n_sent(0),
-      d_n_burst(0)
+      d_n_burst(0),
+      d_gpio_pin(gpio_pin),
+      d_gpio_manual(gpio_pin != -1 && gpio_guard_period > 0.0),
+      d_gpio_manual_assertion_pending(d_gpio_manual), // start pending in manual mode
+      d_gpio_guard_period(gpio_guard_period)
 {
     if (duty_cycle > 1.0 || duty_cycle < 0.0) {
         throw std::runtime_error("Invalid duty cycle (not in [0,1] range)");
+    }
+    if (gpio_guard_period < 0.0) {
+        throw std::runtime_error("GPIO guard period must be non-negative");
+    }
+    const double idle_time = d_burst_period - d_burst_duration;
+    if ((2 * gpio_guard_period) >= 0.9 * idle_time) {
+        throw std::runtime_error("Insufficient idle time for the GPIO guard periods");
     }
 
     // USRP Configuration
@@ -102,7 +116,7 @@ usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
     d_usrp->set_time_source(time_source);
 
     // Reset the time notion
-    if (time_source.empty()) {
+    if (time_source == "internal") {
         d_usrp->set_time_now(uhd::time_spec_t(0.0));
     } else {
         d_usrp->set_time_unknown_pps(uhd::time_spec_t(0.0));
@@ -117,8 +131,17 @@ usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
         throw std::runtime_error("Block compiled without GPIO support");
 #else
     if (gpio_pin != -1) {
-        usrp_gpio_configure_atr_output(
-            d_usrp, gpio_pin, false, true /* Tx only */, false, false);
+        // Configure the GPIO output value manually when the GPIO has to be
+        // asserted with a time advance relative to when the Tx starts and
+        // deasserted with a delay relative to when the Tx ends. Otherwise, tie
+        // the output value to the radio's Tx state via the ATR mechanism.
+        if (d_gpio_manual) {
+            d_gpio_bank =
+                usrp_gpio_configure_manual_output(d_usrp, { gpio_pin }, { false });
+        } else {
+            usrp_gpio_configure_atr_output(
+                d_usrp, gpio_pin, false, true /* Tx only */, false, false);
+        }
         usrp_gpio_dump_config(d_usrp);
     }
 #endif
@@ -136,6 +159,15 @@ usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
 
 void usrp_burst_source_c_impl::set_tx_gain(float gain) { d_usrp->set_tx_gain(gain); }
 
+void usrp_burst_source_c_impl::set_gpio_timed(const uhd::time_spec_t& time, bool val)
+{
+#if UHD_VERSION >= 4000000
+    uint32_t mask = 1 << d_gpio_pin;
+    d_usrp->set_command_time(time);
+    d_usrp->set_gpio_attr(d_gpio_bank, "OUT", val << d_gpio_pin, mask);
+#endif
+}
+
 /*
  * Our virtual destructor.
  */
@@ -150,10 +182,15 @@ int usrp_burst_source_c_impl::work(int noutput_items,
     int n_consumed = 0;
 
     while (n_consumed < ninput_items) {
+        if (d_gpio_manual_assertion_pending) {
+            set_gpio_timed(d_next_tx - d_gpio_guard_period, true);
+            d_gpio_manual_assertion_pending = false;
+        }
+
         while (d_n_sent < d_burst_len && n_consumed < ninput_items) {
-            size_t samps_available = ninput_items - n_consumed;
-            size_t samps_remaining = d_burst_len - d_n_sent;
-            size_t samps_to_send = std::min(samps_remaining, samps_available);
+            const size_t samps_available = ninput_items - n_consumed;
+            const size_t samps_remaining = d_burst_len - d_n_sent;
+            const size_t samps_to_send = std::min(samps_remaining, samps_available);
 
             // Update the Tx metadata and the timeout value
             if (d_n_sent == 0) {
@@ -183,14 +220,35 @@ int usrp_burst_source_c_impl::work(int noutput_items,
                 std::cerr << "Tx timeout..." << std::endl;
         }
 
-        // If the loop has stopped because it is done with the burst
-        // transmission, prepare for the next burst.
-        if (d_n_sent == d_burst_len) {
-            d_next_tx += d_burst_period;
-            d_n_sent = 0;
-            d_n_burst++;
-            std::cout << "Burst " << d_n_burst << std::endl;
+        // If the loop has stopped before completing the burst transmission, do
+        // not prepare for the next burst just yet.
+        if (d_n_sent < d_burst_len)
+            continue;
+
+        // Check the burst ACK
+        uhd::async_metadata_t async_md;
+        size_t acks = 0;
+        while (acks == 0 and d_tx_streamer->recv_async_msg(async_md, 0.1)) {
+            if (async_md.event_code == uhd::async_metadata_t::EVENT_CODE_BURST_ACK) {
+                acks++;
+            } else {
+                std::cout << "WARNING: Got non-ack async event: code "
+                          << async_md.event_code << std::endl;
+            }
         }
+        if (acks == 0)
+            std::cout << "ERROR: burst ACK not received" << std::endl;
+
+        // In manual mode, the GPIO should be deasserted with a guard period
+        // after the end of the burst transmission
+        if (d_gpio_manual) {
+            set_gpio_timed(d_next_tx + d_burst_duration + d_gpio_guard_period, false);
+            d_gpio_manual_assertion_pending = true; // prepare for the next burst
+        }
+        d_next_tx += d_burst_period;
+        d_n_sent = 0;
+        d_n_burst++;
+        std::cout << "Burst " << d_n_burst << std::endl;
     }
 
     return n_consumed;

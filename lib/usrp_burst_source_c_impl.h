@@ -36,6 +36,11 @@ private:
     size_t d_burst_len;                   //!< Burst length in samples
     size_t d_n_sent;                      //!< Samples sent so far in the current burst
     uint64_t d_n_burst;                   //!< Burst count
+    int d_gpio_pin;                       //!< GPIO pin asserted on Tx
+    bool d_gpio_manual;                   //!< Whether controlling the GPIO manually
+    bool d_gpio_manual_assertion_pending; //!< Whether a manual GPIO assertion is pending
+    double d_gpio_guard_period;           //!< Guard period for GPIO assertion/deassertion
+    std::string d_gpio_bank;              //!< GPIO bank name
     uhd::usrp::multi_usrp::sptr d_usrp;   //!< Pointer to multi-USRP object
     uhd::tx_streamer::sptr d_tx_streamer; //!< Pointer to UHD Tx streamer object
     uhd::tx_metadata_t d_tx_metadata;     //!< Tx packet metadata
@@ -52,13 +57,15 @@ public:
                              std::string clock_source,
                              std::string time_source,
                              std::string antenna,
-                             int gpio_pin);
+                             int gpio_pin,
+                             float gpio_guard_period);
     ~usrp_burst_source_c_impl();
 
     int work(int noutput_items,
              gr_vector_const_void_star& input_items,
              gr_vector_void_star& output_items);
     void set_tx_gain(float gain);
+    void set_gpio_timed(const uhd::time_spec_t& time, bool val);
 };
 
 } // namespace radar

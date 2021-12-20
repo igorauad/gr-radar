@@ -172,6 +172,23 @@ blocks:
     coordinate: [336, 124.0]
     rotation: 0
     state: true
+- name: gpio_guard
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: GPIO guard period
+    short_id: ''
+    type: eng_float
+    value: '0.0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [480, 124.0]
+    rotation: 0
+    state: true
 - name: period
   id: parameter
   parameters:
@@ -298,6 +315,7 @@ blocks:
     comment: ''
     duty_cycle: duty_cycle
     gain: gui_gain
+    gpio_guard_period: gpio_guard
     gpio_pin: gpio
     period: period
     samp_rate: samp_rate

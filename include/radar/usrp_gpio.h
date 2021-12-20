@@ -58,13 +58,15 @@ RADAR_API void usrp_gpio_configure_atr_output(uhd::usrp::multi_usrp::sptr usrp,
  * @param bank GPIO bank index.
  * @param chan RF channel index.
  * @param mboard Motherboard index.
+ *
+ * @return GPIO bank name to facilitate future changes to the manually-controlled output.
  */
-RADAR_API void usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::sptr usrp,
-                                                 const std::vector<int>& pins,
-                                                 const std::vector<bool>& vals,
-                                                 size_t bank = 0,
-                                                 size_t chan = 0,
-                                                 size_t mboard = 0);
+RADAR_API std::string usrp_gpio_configure_manual_output(uhd::usrp::multi_usrp::sptr usrp,
+                                                        const std::vector<int>& pins,
+                                                        const std::vector<bool>& vals,
+                                                        size_t bank = 0,
+                                                        size_t chan = 0,
+                                                        size_t mboard = 0);
 
 /**
  * @brief Dump the current USRP GPIO configuration.

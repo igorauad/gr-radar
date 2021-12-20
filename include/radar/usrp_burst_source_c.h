@@ -37,13 +37,24 @@ class RADAR_API usrp_burst_source_c : virtual public gr::sync_block
 public:
     typedef boost::shared_ptr<usrp_burst_source_c> sptr;
 
-    /*!
-     * \brief Return a shared_ptr to a new instance of radar::usrp_burst_source_c.
+    /**
+     * @brief Make USRP Burst Source object.
      *
-     * To avoid accidental use of raw pointers, radar::usrp_burst_source_c's
-     * constructor is in a private implementation
-     * class. radar::usrp_burst_source_c::make is the public interface for
-     * creating new instances.
+     * @param samp_rate Sample rate.
+     * @param center_freq Center frequency.
+     * @param duty_cycle Burst duty cycle.
+     * @param period Burst transmission period in seconds.
+     * @param gain USRP Tx gain in dB.
+     * @param args USRP device address args.
+     * @param wire Wire format
+     * @param clock_source USRP clock source.
+     * @param time_source USRP time source.
+     * @param antenna USRP Tx antenna.
+     * @param gpio_pin GPIO pin to assert when transmitting.
+     * @param gpio_guard_period GPIO assertion guard period in seconds. The GPIO will be
+     * asserted this many seconds in advance of the actual transmission start and
+     * deasserted with this many seconds delay after the burst transmission ends.
+     * @return sptr Shared pointer to the created usrp_burst_source_c object.
      */
     static sptr make(float samp_rate,
                      float center_freq,
@@ -55,7 +66,8 @@ public:
                      std::string clock_source,
                      std::string time_source,
                      std::string antenna,
-                     int gpio_pin = -1);
+                     int gpio_pin = -1,
+                     float gpio_guard_period = 0.0);
 
     virtual void set_tx_gain(float gain) = 0;
 };
