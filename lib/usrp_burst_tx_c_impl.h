@@ -18,16 +18,16 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef INCLUDED_RADAR_USRP_BURST_SOURCE_C_IMPL_H
-#define INCLUDED_RADAR_USRP_BURST_SOURCE_C_IMPL_H
+#ifndef INCLUDED_RADAR_USRP_BURST_TX_C_IMPL_H
+#define INCLUDED_RADAR_USRP_BURST_TX_C_IMPL_H
 
-#include <radar/usrp_burst_source_c.h>
+#include <radar/usrp_burst_tx_c.h>
 #include <uhd/usrp/multi_usrp.hpp>
 
 namespace gr {
 namespace radar {
 
-class usrp_burst_source_c_impl : public usrp_burst_source_c
+class usrp_burst_tx_c_impl : public usrp_burst_tx_c
 {
 private:
     double d_samp_rate;
@@ -47,19 +47,19 @@ private:
     uhd::time_spec_t d_next_tx;           //!< Timestamp for the next burst Tx
 
 public:
-    usrp_burst_source_c_impl(float samp_rate,
-                             float center_freq,
-                             float duty_cycle,
-                             float period,
-                             float gain,
-                             std::string args,
-                             std::string wire,
-                             std::string clock_source,
-                             std::string time_source,
-                             std::string antenna,
-                             int gpio_pin,
-                             float gpio_guard_period);
-    ~usrp_burst_source_c_impl();
+    usrp_burst_tx_c_impl(float samp_rate,
+                         float center_freq,
+                         float duty_cycle,
+                         float period,
+                         float gain,
+                         std::string args,
+                         std::string wire,
+                         std::string clock_source,
+                         std::string time_source,
+                         std::string antenna,
+                         int gpio_pin,
+                         float gpio_guard_period);
+    ~usrp_burst_tx_c_impl();
 
     int work(int noutput_items,
              gr_vector_const_void_star& input_items,
@@ -71,4 +71,4 @@ public:
 } // namespace radar
 } // namespace gr
 
-#endif /* INCLUDED_RADAR_USRP_BURST_SOURCE_C_IMPL_H */
+#endif /* INCLUDED_RADAR_USRP_BURST_TX_C_IMPL_H */

@@ -1,11 +1,11 @@
-id: radar_usrp_burst_source_c
+id: radar_usrp_burst_tx_c
 label: USRP Burst Source
 category: '[RADAR]/RADAR'
 flags: [python, cpp, throttle]
 
 templates:
   imports: import radar
-  make: radar.usrp_burst_source_c(${samp_rate}, ${center_freq}, ${duty_cycle},
+  make: radar.usrp_burst_tx_c(${samp_rate}, ${center_freq}, ${duty_cycle},
       ${period}, ${gain}, ${args}, ${wire}, ${clock_source}, ${time_source},
       ${antenna}, ${gpio_pin}, ${gpio_guard_period})
   callbacks:

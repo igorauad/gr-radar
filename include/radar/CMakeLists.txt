@@ -53,6 +53,6 @@ install(FILES
     estimator_ofdm.h
     estimator_rcs.h
     trigger_command.h
-    usrp_burst_source_c.h
+    usrp_burst_tx_c.h
     DESTINATION include/radar
 )

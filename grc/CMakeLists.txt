@@ -49,6 +49,6 @@ install(FILES
     radar_estimator_ofdm.block.yml
     radar_estimator_rcs.block.yml
     radar_trigger_command.block.yml
-    radar_usrp_burst_source_c.block.yml
+    radar_usrp_burst_tx_c.block.yml
     DESTINATION share/gnuradio/grc/blocks
 )

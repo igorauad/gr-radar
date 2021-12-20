@@ -18,8 +18,8 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef INCLUDED_RADAR_USRP_BURST_SOURCE_C_H
-#define INCLUDED_RADAR_USRP_BURST_SOURCE_C_H
+#ifndef INCLUDED_RADAR_USRP_BURST_TX_C_H
+#define INCLUDED_RADAR_USRP_BURST_TX_C_H
 
 #include <gnuradio/sync_block.h>
 #include <radar/api.h>
@@ -28,17 +28,22 @@ namespace gr {
 namespace radar {
 
 /*!
- * \brief <+description of block+>
+ * \brief USRP Burst Transmitter
+ *
+ * Implements periodic burst transmissions via a USRP device with a specified burst
+ * duration (duty cycle) in each period. Optionally asserts a GPIO when transmitting and
+ * optionally introduces a guard period before and after the GPIO assertion.
+ *
  * \ingroup radar
  *
  */
-class RADAR_API usrp_burst_source_c : virtual public gr::sync_block
+class RADAR_API usrp_burst_tx_c : virtual public gr::sync_block
 {
 public:
-    typedef boost::shared_ptr<usrp_burst_source_c> sptr;
+    typedef boost::shared_ptr<usrp_burst_tx_c> sptr;
 
     /**
-     * @brief Make USRP Burst Source object.
+     * @brief Make USRP Burst Tx object.
      *
      * @param samp_rate Sample rate.
      * @param center_freq Center frequency.
@@ -54,7 +59,7 @@ public:
      * @param gpio_guard_period GPIO assertion guard period in seconds. The GPIO will be
      * asserted this many seconds in advance of the actual transmission start and
      * deasserted with this many seconds delay after the burst transmission ends.
-     * @return sptr Shared pointer to the created usrp_burst_source_c object.
+     * @return sptr Shared pointer to the created usrp_burst_tx_c object.
      */
     static sptr make(float samp_rate,
                      float center_freq,
@@ -75,4 +80,4 @@ public:
 } // namespace radar
 } // namespace gr
 
-#endif /* INCLUDED_RADAR_USRP_BURST_SOURCE_C_H */
+#endif /* INCLUDED_RADAR_USRP_BURST_TX_C_H */

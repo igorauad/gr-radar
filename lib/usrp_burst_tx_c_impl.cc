@@ -22,7 +22,7 @@
 #include "config.h"
 #endif
 
-#include "usrp_burst_source_c_impl.h"
+#include "usrp_burst_tx_c_impl.h"
 #include <gnuradio/io_signature.h>
 #include <radar/usrp_gpio.h>
 #include <uhd/version.hpp>
@@ -32,50 +32,50 @@
 namespace gr {
 namespace radar {
 
-usrp_burst_source_c::sptr usrp_burst_source_c::make(float samp_rate,
-                                                    float center_freq,
-                                                    float duty_cycle,
-                                                    float period,
-                                                    float gain,
-                                                    std::string args,
-                                                    std::string wire,
-                                                    std::string clock_source,
-                                                    std::string time_source,
-                                                    std::string antenna,
-                                                    int gpio_pin,
-                                                    float gpio_guard_period)
+usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
+                                            float center_freq,
+                                            float duty_cycle,
+                                            float period,
+                                            float gain,
+                                            std::string args,
+                                            std::string wire,
+                                            std::string clock_source,
+                                            std::string time_source,
+                                            std::string antenna,
+                                            int gpio_pin,
+                                            float gpio_guard_period)
 {
-    return gnuradio::get_initial_sptr(new usrp_burst_source_c_impl(samp_rate,
-                                                                   center_freq,
-                                                                   duty_cycle,
-                                                                   period,
-                                                                   gain,
-                                                                   args,
-                                                                   wire,
-                                                                   clock_source,
-                                                                   time_source,
-                                                                   antenna,
-                                                                   gpio_pin,
-                                                                   gpio_guard_period));
+    return gnuradio::get_initial_sptr(new usrp_burst_tx_c_impl(samp_rate,
+                                                               center_freq,
+                                                               duty_cycle,
+                                                               period,
+                                                               gain,
+                                                               args,
+                                                               wire,
+                                                               clock_source,
+                                                               time_source,
+                                                               antenna,
+                                                               gpio_pin,
+                                                               gpio_guard_period));
 }
 
 
 /*
  * The private constructor
  */
-usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
-                                                   float center_freq,
-                                                   float duty_cycle,
-                                                   float period,
-                                                   float gain,
-                                                   std::string args,
-                                                   std::string wire,
-                                                   std::string clock_source,
-                                                   std::string time_source,
-                                                   std::string antenna,
-                                                   int gpio_pin,
-                                                   float gpio_guard_period)
-    : gr::sync_block("usrp_burst_source_c",
+usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
+                                           float center_freq,
+                                           float duty_cycle,
+                                           float period,
+                                           float gain,
+                                           std::string args,
+                                           std::string wire,
+                                           std::string clock_source,
+                                           std::string time_source,
+                                           std::string antenna,
+                                           int gpio_pin,
+                                           float gpio_guard_period)
+    : gr::sync_block("usrp_burst_tx_c",
                      gr::io_signature::make(1, 1, sizeof(gr_complex)),
                      gr::io_signature::make(0, 0, 0)),
       d_samp_rate(samp_rate),
@@ -157,9 +157,9 @@ usrp_burst_source_c_impl::usrp_burst_source_c_impl(float samp_rate,
     std::cout << "Burst " << d_n_burst << std::endl;
 }
 
-void usrp_burst_source_c_impl::set_tx_gain(float gain) { d_usrp->set_tx_gain(gain); }
+void usrp_burst_tx_c_impl::set_tx_gain(float gain) { d_usrp->set_tx_gain(gain); }
 
-void usrp_burst_source_c_impl::set_gpio_timed(const uhd::time_spec_t& time, bool val)
+void usrp_burst_tx_c_impl::set_gpio_timed(const uhd::time_spec_t& time, bool val)
 {
 #if UHD_VERSION >= 4000000
     uint32_t mask = 1 << d_gpio_pin;
@@ -171,11 +171,11 @@ void usrp_burst_source_c_impl::set_gpio_timed(const uhd::time_spec_t& time, bool
 /*
  * Our virtual destructor.
  */
-usrp_burst_source_c_impl::~usrp_burst_source_c_impl() {}
+usrp_burst_tx_c_impl::~usrp_burst_tx_c_impl() {}
 
-int usrp_burst_source_c_impl::work(int noutput_items,
-                                   gr_vector_const_void_star& input_items,
-                                   gr_vector_void_star& output_items)
+int usrp_burst_tx_c_impl::work(int noutput_items,
+                               gr_vector_const_void_star& input_items,
+                               gr_vector_void_star& output_items)
 {
     const gr_complex* in = (const gr_complex*)input_items[0];
     const int ninput_items = noutput_items; // sync block

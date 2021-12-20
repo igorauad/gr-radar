@@ -303,8 +303,8 @@ blocks:
     coordinate: [296, 420.0]
     rotation: 0
     state: true
-- name: radar_usrp_burst_source_c_0
-  id: radar_usrp_burst_source_c
+- name: radar_usrp_burst_tx_c_0
+  id: radar_usrp_burst_tx_c
   parameters:
     affinity: ''
     alias: ''
@@ -348,7 +348,7 @@ blocks:
 
 connections:
 - [analog_sig_source_x_0, '0', qtgui_time_sink_x_0, '0']
-- [analog_sig_source_x_0, '0', radar_usrp_burst_source_c_0, '0']
+- [analog_sig_source_x_0, '0', radar_usrp_burst_tx_c_0, '0']
 
 metadata:
   file_format: 1

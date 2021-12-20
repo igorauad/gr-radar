@@ -38,7 +38,7 @@
 #include "radar/estimator_ofdm.h"
 #include "radar/estimator_rcs.h"
 #include "radar/trigger_command.h"
-#include "radar/usrp_burst_source_c.h"
+#include "radar/usrp_burst_tx_c.h"
 %}
 
 
@@ -108,5 +108,5 @@ GR_SWIG_BLOCK_MAGIC2(radar, estimator_ofdm);
 GR_SWIG_BLOCK_MAGIC2(radar, estimator_rcs);
 %include "radar/trigger_command.h"
 GR_SWIG_BLOCK_MAGIC2(radar, trigger_command);
-%include "radar/usrp_burst_source_c.h"
-GR_SWIG_BLOCK_MAGIC2(radar, usrp_burst_source_c);
+%include "radar/usrp_burst_tx_c.h"
+GR_SWIG_BLOCK_MAGIC2(radar, usrp_burst_tx_c);
