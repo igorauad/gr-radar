@@ -50,7 +50,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1040, 12.0]
+    coordinate: [1049, 12]
     rotation: 0
     state: true
 - name: gui_rx_gain
@@ -95,18 +95,6 @@ blocks:
     coordinate: [16, 124.0]
     rotation: 0
     state: true
-- name: variable_0
-  id: variable
-  parameters:
-    comment: ''
-    value: '0'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [328, 312.0]
-    rotation: 0
-    state: true
 - name: analog_sig_source_x_0
   id: analog_sig_source_x
   parameters:
@@ -126,7 +114,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [64, 300.0]
+    coordinate: [66, 422]
     rotation: 0
     state: true
 - name: duty_cycle
@@ -143,7 +131,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [448, 12.0]
+    coordinate: [457, 12]
     rotation: 0
     state: true
 - name: freq
@@ -160,7 +148,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [304, 12.0]
+    coordinate: [313, 12]
     rotation: 0
     state: true
 - name: gpio_guard
@@ -177,7 +165,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [888, 124.0]
+    coordinate: [897, 124]
     rotation: 0
     state: true
 - name: in_gpio
@@ -194,7 +182,24 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [560, 124.0]
+    coordinate: [569, 124]
+    rotation: 0
+    state: true
+- name: in_gpio_wait_val
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: Value to wait on input GPIO before transmitting.
+    short_id: ''
+    type: intx
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [282, 219]
     rotation: 0
     state: true
 - name: out_gpio
@@ -211,7 +216,24 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [720, 124.0]
+    coordinate: [729, 124]
+    rotation: 0
+    state: true
+- name: out_gpio_tx_val
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: Value to set on output GPIO when transmitting.
+    short_id: ''
+    type: intx
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [449, 219]
     rotation: 0
     state: true
 - name: period
@@ -228,7 +250,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [560, 12.0]
+    coordinate: [569, 12]
     rotation: 0
     state: true
 - name: qtgui_freq_sink_x_0
@@ -308,7 +330,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [800, 340.0]
+    coordinate: [833, 474]
     rotation: 0
     state: enabled
 - name: qtgui_time_sink_x_0
@@ -405,7 +427,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [296, 420.0]
+    coordinate: [298, 542]
     rotation: 0
     state: true
 - name: radar_usrp_burst_tx_c_0
@@ -422,7 +444,9 @@ blocks:
     gain: gui_tx_gain
     gpio_guard_period: gpio_guard
     in_gpio_pin: in_gpio
+    in_gpio_wait_val: bool(in_gpio_wait_val)
     out_gpio_pin: out_gpio
+    out_gpio_tx_val: bool(out_gpio_tx_val)
     period: period
     samp_rate: samp_rate
     time_source: internal
@@ -431,7 +455,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [296, 308.0]
+    coordinate: [310, 419]
     rotation: 0
     state: true
 - name: rx_addr
@@ -448,7 +472,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [416, 124.0]
+    coordinate: [425, 124]
     rotation: 0
     state: true
 - name: rx_gain
@@ -465,7 +489,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [776, 12.0]
+    coordinate: [785, 12]
     rotation: 0
     state: true
 - name: rx_subdev
@@ -482,7 +506,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [872, 12.0]
+    coordinate: [881, 12]
     rotation: 0
     state: true
 - name: samp_rate
@@ -499,7 +523,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [184, 12.0]
+    coordinate: [193, 12]
     rotation: 0
     state: true
 - name: tx_addr
@@ -516,7 +540,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [272, 124.0]
+    coordinate: [281, 124]
     rotation: 0
     state: true
 - name: tx_gain
@@ -533,7 +557,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [680, 12.0]
+    coordinate: [689, 12]
     rotation: 0
     state: true
 - name: uhd_usrp_source_0
@@ -888,7 +912,6 @@ blocks:
     sd_spec6: ''
     sd_spec7: ''
     show_lo_controls: 'False'
-    start_time: '-1.0'
     stream_args: ''
     stream_chans: '[]'
     sync: sync
@@ -905,7 +928,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [552, 292.0]
+    coordinate: [554, 414]
     rotation: 0
     state: enabled
 

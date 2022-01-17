@@ -45,7 +45,9 @@ usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
                                             std::string antenna,
                                             int in_gpio_pin,
                                             int out_gpio_pin,
-                                            float gpio_guard_period)
+                                            float gpio_guard_period,
+                                            bool in_gpio_wait_val,
+                                            bool out_gpio_tx_val)
 {
     return gnuradio::get_initial_sptr(new usrp_burst_tx_c_impl(samp_rate,
                                                                center_freq,
@@ -59,7 +61,9 @@ usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
                                                                antenna,
                                                                in_gpio_pin,
                                                                out_gpio_pin,
-                                                               gpio_guard_period));
+                                                               gpio_guard_period,
+                                                               in_gpio_wait_val,
+                                                               out_gpio_tx_val));
 }
 
 
@@ -78,7 +82,9 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
                                            std::string antenna,
                                            int in_gpio_pin,
                                            int out_gpio_pin,
-                                           float gpio_guard_period)
+                                           float gpio_guard_period,
+                                           bool in_gpio_wait_val,
+                                           bool out_gpio_tx_val)
     : gr::sync_block("usrp_burst_tx_c",
                      gr::io_signature::make(1, 1, sizeof(gr_complex)),
                      gr::io_signature::make(0, 0, 0)),
@@ -91,8 +97,10 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
       d_in_gpio_pin(in_gpio_pin),
       d_out_gpio_pin(out_gpio_pin),
       d_gpio_manual(out_gpio_pin != -1 && gpio_guard_period > 0.0),
-      d_gpio_manual_assertion_pending(d_gpio_manual), // start pending in manual mode
-      d_gpio_guard_period(gpio_guard_period)
+      d_gpio_manual_change_pending(d_gpio_manual), // start pending in manual mode
+      d_gpio_guard_period(gpio_guard_period),
+      d_in_gpio_wait_val(in_gpio_wait_val),
+      d_out_gpio_tx_val(out_gpio_tx_val)
 {
     if (duty_cycle > 1.0 || duty_cycle < 0.0) {
         throw std::runtime_error("Invalid duty cycle (not in [0,1] range)");
@@ -143,9 +151,13 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
         // asserted with a time advance relative to when the Tx starts and
         // deasserted with a delay relative to when the Tx ends. Otherwise, tie
         // the output value to the radio's Tx state via the ATR mechanism.
+        //
+        // When controlling the output value manually, make sure to start with
+        // the value that indicates the USRP is not transmitting. This value
+        // will be flipped when the first burst transmission starts.
         if (d_gpio_manual) {
-            d_out_gpio_bank =
-                usrp_gpio_configure_manual_output(d_usrp, { out_gpio_pin }, { false });
+            d_out_gpio_bank = usrp_gpio_configure_manual_output(
+                d_usrp, { out_gpio_pin }, { !d_out_gpio_tx_val });
         } else {
             usrp_gpio_configure_atr_output(
                 d_usrp, out_gpio_pin, false, true /* Tx only */, false, false);
@@ -212,9 +224,9 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
     int n_consumed = 0;
 
     while (n_consumed < ninput_items) {
-        if (d_gpio_manual_assertion_pending) {
-            set_gpio_timed(d_next_tx - d_gpio_guard_period, true);
-            d_gpio_manual_assertion_pending = false;
+        if (d_gpio_manual_change_pending) {
+            set_gpio_timed(d_next_tx - d_gpio_guard_period, d_out_gpio_tx_val);
+            d_gpio_manual_change_pending = false;
         }
 
         while (d_n_sent < d_burst_len && n_consumed < ninput_items) {
@@ -226,7 +238,7 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
             // If required, wait for a high reading on the input GPIO pin before
             // initiating a burst
             if (start_of_burst && d_in_gpio_pin != -1)
-                wait_gpio_in(true);
+                wait_gpio_in(d_in_gpio_wait_val);
 
             // Update the Tx metadata and the timeout value
             //
@@ -272,17 +284,18 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
         if (acks == 0)
             std::cout << "ERROR: burst ACK not received" << std::endl;
 
-        // In manual mode, the GPIO should be deasserted with a guard period
-        // after the end of the burst transmission
+        // In manual mode, the output GPIO value should be reverted with a guard
+        // period after the end of the burst transmission
         if (d_gpio_manual) {
-            set_gpio_timed(d_next_tx + d_burst_duration + d_gpio_guard_period, false);
-            d_gpio_manual_assertion_pending = true; // prepare for the next burst
+            set_gpio_timed(d_next_tx + d_burst_duration + d_gpio_guard_period,
+                           !d_out_gpio_tx_val);
+            d_gpio_manual_change_pending = true; // prepare for the next burst
         }
 
         // If required, wait for a low reading on the input GPIO pin before
         // proceeding to the next burst
         if (d_in_gpio_pin != -1)
-            wait_gpio_in(false);
+            wait_gpio_in(!d_in_gpio_wait_val);
 
         d_next_tx += d_burst_period;
         d_n_sent = 0;

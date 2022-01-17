@@ -31,16 +31,18 @@ class usrp_burst_tx_c_impl : public usrp_burst_tx_c
 {
 private:
     double d_samp_rate;
-    double d_burst_duration;              //!< Burst duration in secs
-    double d_burst_period;                //!< Inter-burst interval (periodicity) in secs
-    size_t d_burst_len;                   //!< Burst length in samples
-    size_t d_n_sent;                      //!< Samples sent so far in the current burst
-    uint64_t d_n_burst;                   //!< Burst count
-    int d_in_gpio_pin;                    //!< Input GPIO pin verified before and after Tx
-    int d_out_gpio_pin;                   //!< Output GPIO pin asserted during Tx
-    bool d_gpio_manual;                   //!< Whether controlling the GPIO manually
-    bool d_gpio_manual_assertion_pending; //!< Whether a manual GPIO assertion is pending
+    double d_burst_duration;           //!< Burst duration in secs
+    double d_burst_period;             //!< Inter-burst interval (periodicity) in secs
+    size_t d_burst_len;                //!< Burst length in samples
+    size_t d_n_sent;                   //!< Samples sent so far in the current burst
+    uint64_t d_n_burst;                //!< Burst count
+    int d_in_gpio_pin;                 //!< Input GPIO pin verified before and after Tx
+    int d_out_gpio_pin;                //!< Output GPIO pin controlled during Tx
+    bool d_gpio_manual;                //!< Whether controlling the GPIO manually
+    bool d_gpio_manual_change_pending; //!< Whether a manual output GPIO change is pending
     double d_gpio_guard_period;  //!< Output GPIO's assertion/deassertion guard period
+    bool d_in_gpio_wait_val;     //!< Input GPIO value verified before transmitting
+    bool d_out_gpio_tx_val;      //!< Output GPIO value set when transmitting
     std::string d_in_gpio_bank;  //!< Input pin's GPIO bank name
     std::string d_out_gpio_bank; //!< Output pin's GPIO bank name
     uhd::usrp::multi_usrp::sptr d_usrp;   //!< Pointer to multi-USRP object
@@ -61,7 +63,9 @@ public:
                          std::string antenna,
                          int in_gpio_pin,
                          int out_gpio_pin,
-                         float gpio_guard_period);
+                         float gpio_guard_period,
+                         bool in_gpio_wait_val,
+                         bool out_gpio_tx_val);
     ~usrp_burst_tx_c_impl();
 
     int work(int noutput_items,

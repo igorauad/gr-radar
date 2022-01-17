@@ -56,11 +56,18 @@ public:
      * @param time_source USRP time source.
      * @param antenna USRP Tx antenna.
      * @param in_gpio_pin Input GPIO pin to poll before and after each burst transmission.
-     * Should be high for Tx to start and low after Tx ends.
-     * @param out_gpio_pin Output GPIO pin to assert when transmitting.
-     * @param gpio_guard_period GPIO assertion guard period in seconds. The GPIO will be
-     * asserted this many seconds in advance of the actual transmission start and
-     * deasserted with this many seconds delay after the burst transmission ends.
+     * @param out_gpio_pin Output GPIO pin to control when transmitting.
+     * @param gpio_guard_period GPIO assertion/deassertion guard period in seconds. The
+     * GPIO will be changed this many seconds in advance of the actual transmission start
+     * and reverted back to the original value with this many seconds delay after the
+     * burst transmission ends.
+     * @param in_gpio_wait_val Value to wait on the input GPIO pin before each burst
+     * transmission if parameter in_gpio_pin is defined. By default, the input value
+     * should be high for Tx to start and low after Tx ends.
+     * @param out_gpio_tx_val Output GPIO pin value to set when transmitting if parameter
+     * out_gpio_pin is defined. Only supported in manual mode (when gpio_guard_period is
+     * non-zero). By default, the GPIO is set to high when transmitting. In automatic mode
+     * (when gpio_guard_period is zero), the GPIO is always set to high when transmitting.
      * @return sptr Shared pointer to the created usrp_burst_tx_c object.
      */
     static sptr make(float samp_rate,
@@ -75,7 +82,9 @@ public:
                      std::string antenna,
                      int in_gpio_pin = -1,
                      int out_gpio_pin = -1,
-                     float gpio_guard_period = 0.0);
+                     float gpio_guard_period = 0.0,
+                     bool in_gpio_wait_val = true,
+                     bool out_gpio_tx_val = true);
 
     virtual void set_tx_gain(float gain) = 0;
 };

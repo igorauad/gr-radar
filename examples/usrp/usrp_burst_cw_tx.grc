@@ -189,6 +189,23 @@ blocks:
     coordinate: [328, 124.0]
     rotation: 0
     state: true
+- name: in_gpio_wait_val
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: Value to wait on input GPIO before transmitting.
+    short_id: ''
+    type: intx
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [488, 220]
+    rotation: 0
+    state: true
 - name: out_gpio
   id: parameter
   parameters:
@@ -204,6 +221,23 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [488, 124.0]
+    rotation: 0
+    state: true
+- name: out_gpio_tx_val
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: Value to set on output GPIO when transmitting.
+    short_id: ''
+    type: intx
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [655, 220]
     rotation: 0
     state: true
 - name: period
@@ -334,7 +368,9 @@ blocks:
     gain: gui_gain
     gpio_guard_period: gpio_guard
     in_gpio_pin: in_gpio
+    in_gpio_wait_val: bool(in_gpio_wait_val)
     out_gpio_pin: out_gpio
+    out_gpio_tx_val: bool(out_gpio_tx_val)
     period: period
     samp_rate: samp_rate
     time_source: internal
@@ -343,7 +379,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [296, 308.0]
+    coordinate: [295, 308]
     rotation: 0
     state: true
 - name: samp_rate

@@ -7,7 +7,8 @@ templates:
   imports: import radar
   make: radar.usrp_burst_tx_c(${samp_rate}, ${center_freq}, ${duty_cycle},
       ${period}, ${gain}, ${args}, ${wire}, ${clock_source}, ${time_source},
-      ${antenna}, ${in_gpio_pin}, ${out_gpio_pin}, ${gpio_guard_period})
+      ${antenna}, ${in_gpio_pin}, ${out_gpio_pin}, ${gpio_guard_period},
+      ${in_gpio_wait_val}, ${out_gpio_tx_val})
   callbacks:
     - set_tx_gain(${gain})
 
@@ -69,6 +70,16 @@ parameters:
   label: GPIO Guard Period
   dtype: float
   default: '0.0'
+  hide: part
+- id: in_gpio_wait_val
+  label: In GPIO Value
+  dtype: bool
+  default: True
+  hide: part
+- id: out_gpio_tx_val
+  label: Out GPIO Value
+  dtype: bool
+  default: True
   hide: part
 
 asserts:
