@@ -99,6 +99,7 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
       d_gpio_manual(out_gpio_pin != -1 && gpio_guard_period > 0.0),
       d_gpio_manual_change_pending(d_gpio_manual), // start pending in manual mode
       d_gpio_guard_period(gpio_guard_period),
+      d_gpio_guard_period_ms(1e3 * gpio_guard_period),
       d_in_gpio_wait_val(in_gpio_wait_val),
       d_out_gpio_tx_val(out_gpio_tx_val)
 {
@@ -238,7 +239,7 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
             // If required, wait for a high reading on the input GPIO pin before
             // initiating a burst
             if (start_of_burst && d_in_gpio_pin != -1)
-                wait_gpio_in(d_in_gpio_wait_val);
+                wait_gpio_in(d_in_gpio_wait_val, d_gpio_guard_period_ms);
 
             // Update the Tx metadata and the timeout value
             //
@@ -295,7 +296,7 @@ int usrp_burst_tx_c_impl::work(int noutput_items,
         // If required, wait for a low reading on the input GPIO pin before
         // proceeding to the next burst
         if (d_in_gpio_pin != -1)
-            wait_gpio_in(!d_in_gpio_wait_val);
+            wait_gpio_in(!d_in_gpio_wait_val, d_gpio_guard_period_ms);
 
         d_next_tx += d_burst_period;
         d_n_sent = 0;

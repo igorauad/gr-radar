@@ -40,11 +40,12 @@ private:
     int d_out_gpio_pin;                //!< Output GPIO pin controlled during Tx
     bool d_gpio_manual;                //!< Whether controlling the GPIO manually
     bool d_gpio_manual_change_pending; //!< Whether a manual output GPIO change is pending
-    double d_gpio_guard_period;  //!< Output GPIO's assertion/deassertion guard period
-    bool d_in_gpio_wait_val;     //!< Input GPIO value verified before transmitting
-    bool d_out_gpio_tx_val;      //!< Output GPIO value set when transmitting
-    std::string d_in_gpio_bank;  //!< Input pin's GPIO bank name
-    std::string d_out_gpio_bank; //!< Output pin's GPIO bank name
+    double d_gpio_guard_period;    //!< Output GPIO's assertion/deassertion guard period
+    double d_gpio_guard_period_ms; //!< Same value but in milliseconds instead of seconds
+    bool d_in_gpio_wait_val;       //!< Input GPIO value verified before transmitting
+    bool d_out_gpio_tx_val;        //!< Output GPIO value set when transmitting
+    std::string d_in_gpio_bank;    //!< Input pin's GPIO bank name
+    std::string d_out_gpio_bank;   //!< Output pin's GPIO bank name
     uhd::usrp::multi_usrp::sptr d_usrp;   //!< Pointer to multi-USRP object
     uhd::tx_streamer::sptr d_tx_streamer; //!< Pointer to UHD Tx streamer object
     uhd::tx_metadata_t d_tx_metadata;     //!< Tx packet metadata

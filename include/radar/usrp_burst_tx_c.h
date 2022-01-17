@@ -60,7 +60,8 @@ public:
      * @param gpio_guard_period GPIO assertion/deassertion guard period in seconds. The
      * GPIO will be changed this many seconds in advance of the actual transmission start
      * and reverted back to the original value with this many seconds delay after the
-     * burst transmission ends.
+     * burst transmission ends. If the input GPIO pin is polled before/after each burst
+     * transmission, the GPIO value wait will timeout as soon as the guard period expires.
      * @param in_gpio_wait_val Value to wait on the input GPIO pin before each burst
      * transmission if parameter in_gpio_pin is defined. By default, the input value
      * should be high for Tx to start and low after Tx ends.
