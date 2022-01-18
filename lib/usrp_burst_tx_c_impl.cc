@@ -184,13 +184,20 @@ void usrp_burst_tx_c_impl::set_tx_gain(float gain) { d_usrp->set_tx_gain(gain); 
 
 void usrp_burst_tx_c_impl::wait_gpio_in(bool expected_val,
                                         double timeout_ms,
+                                        bool expect_transition,
                                         int sleep_ms)
 {
+    bool first_val;
+    bool first_read = true;
     double elapsed_ms = 0;
     while (elapsed_ms < timeout_ms) {
         uint32_t reg_val = d_usrp->get_gpio_attr(d_in_gpio_bank, "READBACK");
         bool bit_val = (reg_val >> d_in_gpio_pin) & 0x01;
-        if (bit_val == expected_val)
+        if (first_read) {
+            first_val = bit_val;
+            first_read = false;
+        }
+        if (bit_val == expected_val && (!expect_transition || bit_val != first_val))
             break;
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
         elapsed_ms += sleep_ms;

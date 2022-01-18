@@ -74,7 +74,10 @@ public:
              gr_vector_void_star& output_items);
     void set_tx_gain(float gain);
     void set_gpio_timed(const uhd::time_spec_t& time, bool val, int sleep_ms = 10);
-    void wait_gpio_in(bool expected_val, double timeout_ms = 200, int sleep_ms = 10);
+    void wait_gpio_in(bool expected_val,
+                      double timeout_ms,
+                      bool expect_transition = true,
+                      int sleep_ms = 10);
 };
 
 } // namespace radar
