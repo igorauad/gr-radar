@@ -32,7 +32,28 @@ options:
     state: enabled
 
 blocks:
-- name: cw_freq
+- name: digital_gain_db
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: Digital Gain (db)
+    min_len: '200'
+    orient: Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '1'
+    stop: 1e2
+    value: '0'
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [366, 125]
+    rotation: 0
+    state: true
+- name: gui_cw_freq
   id: variable_qtgui_range
   parameters:
     comment: ''
@@ -44,13 +65,13 @@ blocks:
     start: '0'
     step: samp_rate / 100
     stop: samp_rate / 2
-    value: '500'
+    value: cw_freq
     widget: counter_slider
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1049, 12]
+    coordinate: [238, 124]
     rotation: 0
     state: true
 - name: gui_rx_gain
@@ -92,7 +113,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [16, 124.0]
+    coordinate: [16, 124]
     rotation: 0
     state: true
 - name: analog_sig_source_x_0
@@ -102,7 +123,7 @@ blocks:
     alias: ''
     amp: '1'
     comment: ''
-    freq: cw_freq
+    freq: gui_cw_freq
     maxoutbuf: '0'
     minoutbuf: '0'
     offset: '0'
@@ -114,7 +135,42 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [66, 422]
+    coordinate: [90, 366]
+    rotation: 0
+    state: true
+- name: blocks_multiply_const_vxx_0
+  id: blocks_multiply_const_vxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    const: 10**(digital_gain_db/10)
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: complex
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [349, 584]
+    rotation: 0
+    state: true
+- name: cw_freq
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: CW Frequency
+    short_id: ''
+    type: eng_float
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [688, 12]
     rotation: 0
     state: true
 - name: duty_cycle
@@ -165,7 +221,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1052, 217]
+    coordinate: [1077, 217]
     rotation: 0
     state: true
 - name: gpio_guard
@@ -182,7 +238,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1048, 122]
+    coordinate: [1073, 122]
     rotation: 0
     state: true
 - name: in_gpio
@@ -199,7 +255,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [721, 122]
+    coordinate: [746, 122]
     rotation: 0
     state: true
 - name: in_gpio_wait_val
@@ -216,7 +272,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [719, 217]
+    coordinate: [744, 217]
     rotation: 0
     state: true
 - name: out_gpio
@@ -233,7 +289,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [881, 122]
+    coordinate: [906, 122]
     rotation: 0
     state: true
 - name: out_gpio_tx_val
@@ -250,7 +306,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [886, 217]
+    coordinate: [911, 217]
     rotation: 0
     state: true
 - name: period
@@ -305,7 +361,7 @@ blocks:
     fftsize: '1024'
     freqhalf: 'True'
     grid: 'True'
-    gui_hint: ''
+    gui_hint: 1,0
     label: Relative Gain
     label1: ''
     label10: ''''''
@@ -381,7 +437,7 @@ blocks:
     ctrlpanel: 'False'
     entags: 'True'
     grid: 'False'
-    gui_hint: ''
+    gui_hint: 0,0,1,2
     label1: Signal 1
     label10: Signal 10
     label2: Signal 2
@@ -444,7 +500,68 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [298, 542]
+    coordinate: [576, 492]
+    rotation: 0
+    state: true
+- name: qtgui_waterfall_sink_x_0
+  id: qtgui_waterfall_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '0'
+    color10: '0'
+    color2: '0'
+    color3: '0'
+    color4: '0'
+    color5: '0'
+    color6: '0'
+    color7: '0'
+    color8: '0'
+    color9: '0'
+    comment: ''
+    fc: freq
+    fftsize: '1024'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: 1,1
+    int_max: '10'
+    int_min: '-140'
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '""'
+    nconnections: '1'
+    showports: 'False'
+    type: complex
+    update_time: '0.10'
+    wintype: firdes.WIN_BLACKMAN_hARRIS
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [576, 707]
     rotation: 0
     state: true
 - name: radar_usrp_burst_tx_c_0
@@ -490,7 +607,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [483, 219]
+    coordinate: [508, 219]
     rotation: 0
     state: true
 - name: rx_gain
@@ -507,7 +624,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [625, 218]
+    coordinate: [650, 218]
     rotation: 0
     state: true
 - name: rx_subdev
@@ -558,7 +675,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [485, 124]
+    coordinate: [510, 124]
     rotation: 0
     state: true
 - name: tx_gain
@@ -575,7 +692,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [626, 123]
+    coordinate: [651, 123]
     rotation: 0
     state: true
 - name: uhd_usrp_source_0
@@ -951,9 +1068,11 @@ blocks:
     state: enabled
 
 connections:
-- [analog_sig_source_x_0, '0', qtgui_time_sink_x_0, '0']
 - [analog_sig_source_x_0, '0', radar_usrp_burst_tx_c_0, '0']
-- [uhd_usrp_source_0, '0', qtgui_freq_sink_x_0, '0']
+- [blocks_multiply_const_vxx_0, '0', qtgui_freq_sink_x_0, '0']
+- [blocks_multiply_const_vxx_0, '0', qtgui_time_sink_x_0, '0']
+- [blocks_multiply_const_vxx_0, '0', qtgui_waterfall_sink_x_0, '0']
+- [uhd_usrp_source_0, '0', blocks_multiply_const_vxx_0, '0']
 
 metadata:
   file_format: 1
