@@ -28,6 +28,7 @@
 #include <uhd/version.hpp>
 #include <algorithm>
 #include <chrono>
+#include <sstream>
 #include <thread>
 
 namespace gr {
@@ -47,7 +48,8 @@ usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
                                             int out_gpio_pin,
                                             float gpio_guard_period,
                                             bool in_gpio_wait_val,
-                                            bool out_gpio_tx_val)
+                                            bool out_gpio_tx_val,
+                                            bool gpio_debug)
 {
     return gnuradio::get_initial_sptr(new usrp_burst_tx_c_impl(samp_rate,
                                                                center_freq,
@@ -63,7 +65,8 @@ usrp_burst_tx_c::sptr usrp_burst_tx_c::make(float samp_rate,
                                                                out_gpio_pin,
                                                                gpio_guard_period,
                                                                in_gpio_wait_val,
-                                                               out_gpio_tx_val));
+                                                               out_gpio_tx_val,
+                                                               gpio_debug));
 }
 
 
@@ -84,7 +87,8 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
                                            int out_gpio_pin,
                                            float gpio_guard_period,
                                            bool in_gpio_wait_val,
-                                           bool out_gpio_tx_val)
+                                           bool out_gpio_tx_val,
+                                           bool gpio_debug)
     : gr::sync_block("usrp_burst_tx_c",
                      gr::io_signature::make(1, 1, sizeof(gr_complex)),
                      gr::io_signature::make(0, 0, 0)),
@@ -101,7 +105,8 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
       d_gpio_guard_period(gpio_guard_period),
       d_gpio_guard_period_ms(1e3 * gpio_guard_period),
       d_in_gpio_wait_val(in_gpio_wait_val),
-      d_out_gpio_tx_val(out_gpio_tx_val)
+      d_out_gpio_tx_val(out_gpio_tx_val),
+      d_gpio_debug(gpio_debug)
 {
     if (duty_cycle > 1.0 || duty_cycle < 0.0) {
         throw std::runtime_error("Invalid duty cycle (not in [0,1] range)");
@@ -180,6 +185,15 @@ usrp_burst_tx_c_impl::usrp_burst_tx_c_impl(float samp_rate,
     std::cout << "Burst " << d_n_burst << std::endl;
 }
 
+std::string usrp_burst_tx_c_impl::get_timestamp()
+{
+    auto now = d_usrp->get_time_now();
+    std::ostringstream os;
+    os << now.get_full_secs() << " sec - " << (int)std::round(1e3 * now.get_frac_secs())
+       << " ms: ";
+    return os.str();
+}
+
 void usrp_burst_tx_c_impl::set_tx_gain(float gain) { d_usrp->set_tx_gain(gain); }
 
 void usrp_burst_tx_c_impl::wait_gpio_in(bool expected_val,
@@ -187,11 +201,19 @@ void usrp_burst_tx_c_impl::wait_gpio_in(bool expected_val,
                                         bool expect_transition,
                                         int sleep_ms)
 {
+#if UHD_VERSION >= 4000000
+    if (d_gpio_debug)
+        std::cout << get_timestamp() << "Wait val=" << expected_val << " on input pin "
+                  << d_in_gpio_pin << std::endl;
+
     bool first_val;
     bool first_read = true;
     double elapsed_ms = 0;
     while (elapsed_ms < timeout_ms) {
         uint32_t reg_val = d_usrp->get_gpio_attr(d_in_gpio_bank, "READBACK");
+        if (d_gpio_debug)
+            std::cout << get_timestamp() << "reg val" << boost::format("0x%08x") % reg_val
+                      << std::endl;
         bool bit_val = (reg_val >> d_in_gpio_pin) & 0x01;
         if (first_read) {
             first_val = bit_val;
@@ -202,11 +224,15 @@ void usrp_burst_tx_c_impl::wait_gpio_in(bool expected_val,
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
         elapsed_ms += sleep_ms;
     }
+
     if (elapsed_ms >= timeout_ms) {
         throw std::runtime_error(
             "Timed out while waiting for val=" + std::to_string(expected_val) +
             " on input pin " + std::to_string(d_in_gpio_pin));
     }
+    if (d_gpio_debug)
+        std::cout << get_timestamp() << "Elapsed: " << elapsed_ms << " ms" << std::endl;
+#endif
 }
 
 void usrp_burst_tx_c_impl::set_gpio_timed(const uhd::time_spec_t& time,
@@ -214,6 +240,9 @@ void usrp_burst_tx_c_impl::set_gpio_timed(const uhd::time_spec_t& time,
                                           int sleep_ms)
 {
 #if UHD_VERSION >= 4000000
+    if (d_gpio_debug)
+        std::cout << get_timestamp() << "Set val=" << val << " on output pin "
+                  << d_out_gpio_pin << std::endl;
     // If the scheduled time is more than one second ahead, sleep until it is
     // not. Otherwise, subsequent control commands sent after the timed
     // set_gpio_attr() called below could timeout.

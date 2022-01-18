@@ -155,6 +155,23 @@ blocks:
     coordinate: [680, 12.0]
     rotation: 0
     state: true
+- name: gpio_debug
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: GPIO debugging mode
+    short_id: ''
+    type: intx
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [807, 123]
+    rotation: 0
+    state: true
 - name: gpio_guard
   id: parameter
   parameters:
@@ -366,6 +383,7 @@ blocks:
     comment: ''
     duty_cycle: duty_cycle
     gain: gui_gain
+    gpio_debug: bool(gpio_debug)
     gpio_guard_period: gpio_guard
     in_gpio_pin: in_gpio
     in_gpio_wait_val: bool(in_gpio_wait_val)

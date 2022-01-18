@@ -70,6 +70,7 @@ public:
      * non-zero). By default, the GPIO is set to high when transmitting. In automatic mode
      * (when gpio_guard_period is zero), the GPIO is always set to high when transmitting.
      * @return sptr Shared pointer to the created usrp_burst_tx_c object.
+     * @param gpio_debug When set to true, prints debugging logs for the GPIO control.
      */
     static sptr make(float samp_rate,
                      float center_freq,
@@ -85,7 +86,8 @@ public:
                      int out_gpio_pin = -1,
                      float gpio_guard_period = 0.0,
                      bool in_gpio_wait_val = true,
-                     bool out_gpio_tx_val = true);
+                     bool out_gpio_tx_val = true,
+                     bool gpio_debug = false);
 
     virtual void set_tx_gain(float gain) = 0;
 };

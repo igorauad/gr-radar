@@ -50,6 +50,9 @@ private:
     uhd::tx_streamer::sptr d_tx_streamer; //!< Pointer to UHD Tx streamer object
     uhd::tx_metadata_t d_tx_metadata;     //!< Tx packet metadata
     uhd::time_spec_t d_next_tx;           //!< Timestamp for the next burst Tx
+    bool d_gpio_debug;                    //!< GPIO debug mode
+
+    std::string get_timestamp();
 
 public:
     usrp_burst_tx_c_impl(float samp_rate,
@@ -66,7 +69,8 @@ public:
                          int out_gpio_pin,
                          float gpio_guard_period,
                          bool in_gpio_wait_val,
-                         bool out_gpio_tx_val);
+                         bool out_gpio_tx_val,
+                         bool gpio_debug);
     ~usrp_burst_tx_c_impl();
 
     int work(int noutput_items,

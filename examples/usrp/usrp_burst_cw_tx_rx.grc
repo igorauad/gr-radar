@@ -148,7 +148,24 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [313, 12]
+    coordinate: [313, 11]
+    rotation: 0
+    state: true
+- name: gpio_debug
+  id: parameter
+  parameters:
+    alias: ''
+    comment: ''
+    hide: none
+    label: GPIO debugging mode
+    short_id: ''
+    type: intx
+    value: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1052, 217]
     rotation: 0
     state: true
 - name: gpio_guard
@@ -165,7 +182,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [897, 124]
+    coordinate: [1048, 122]
     rotation: 0
     state: true
 - name: in_gpio
@@ -182,7 +199,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [569, 124]
+    coordinate: [721, 122]
     rotation: 0
     state: true
 - name: in_gpio_wait_val
@@ -199,7 +216,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [282, 219]
+    coordinate: [719, 217]
     rotation: 0
     state: true
 - name: out_gpio
@@ -216,7 +233,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [729, 124]
+    coordinate: [881, 122]
     rotation: 0
     state: true
 - name: out_gpio_tx_val
@@ -233,7 +250,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [449, 219]
+    coordinate: [886, 217]
     rotation: 0
     state: true
 - name: period
@@ -330,7 +347,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [833, 474]
+    coordinate: [576, 587]
     rotation: 0
     state: enabled
 - name: qtgui_time_sink_x_0
@@ -442,6 +459,7 @@ blocks:
     comment: ''
     duty_cycle: duty_cycle
     gain: gui_tx_gain
+    gpio_debug: bool(gpio_debug)
     gpio_guard_period: gpio_guard
     in_gpio_pin: in_gpio
     in_gpio_wait_val: bool(in_gpio_wait_val)
@@ -455,7 +473,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [310, 419]
+    coordinate: [341, 374]
     rotation: 0
     state: true
 - name: rx_addr
@@ -472,7 +490,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [425, 124]
+    coordinate: [483, 219]
     rotation: 0
     state: true
 - name: rx_gain
@@ -489,7 +507,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [785, 12]
+    coordinate: [625, 218]
     rotation: 0
     state: true
 - name: rx_subdev
@@ -506,7 +524,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [881, 12]
+    coordinate: [814, 11]
     rotation: 0
     state: true
 - name: samp_rate
@@ -540,7 +558,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [281, 124]
+    coordinate: [485, 124]
     rotation: 0
     state: true
 - name: tx_gain
@@ -557,7 +575,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [689, 12]
+    coordinate: [626, 123]
     rotation: 0
     state: true
 - name: uhd_usrp_source_0
@@ -928,7 +946,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [554, 414]
+    coordinate: [89, 528]
     rotation: 0
     state: enabled
 
