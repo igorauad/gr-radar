@@ -202,9 +202,27 @@ void usrp_burst_tx_c_impl::wait_gpio_in(bool expected_val,
     }
 }
 
-void usrp_burst_tx_c_impl::set_gpio_timed(const uhd::time_spec_t& time, bool val)
+void usrp_burst_tx_c_impl::set_gpio_timed(const uhd::time_spec_t& time,
+                                          bool val,
+                                          int sleep_ms)
 {
 #if UHD_VERSION >= 4000000
+    // If the scheduled time is more than one second ahead, sleep until it is
+    // not. Otherwise, subsequent control commands sent after the timed
+    // set_gpio_attr() called below could timeout.
+    //
+    // Note set_gpio_attr() is not a blocking call even though it is timed. It
+    // returns immediately. Also, if we try to read the updated attribute ("OUT"
+    // register) via d_usrp->get_gpio_attr(d_out_gpio_bank, "OUT"), this call
+    // also returns immediately with the register value cached in software,
+    // rather than the value currently set in hardware (TODO confirm). Instead,
+    // only subsequent commands reading other attributes (e.g., the READBACK
+    // register) would block. Hence, without the explicit sleep loop below, this
+    // function would return immediately and subsequent functions (like
+    // wait_gpio_in) could face a long wait interval and timeout.
+    while (time.get_real_secs() - d_usrp->get_time_now().get_real_secs() > 1) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+    }
     uint32_t mask = 1 << d_out_gpio_pin;
     d_usrp->set_command_time(time);
     d_usrp->set_gpio_attr(d_out_gpio_bank, "OUT", val << d_out_gpio_pin, mask);
